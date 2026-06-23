@@ -7,7 +7,8 @@ from pathlib import Path
 
 from .config import load_config
 from .control import ControlState, Hotkeys, install_hotkeys
-from .model import choose_click_targets, choose_fallback_targets, scale_grid_to_window, to_screen_point
+from .model import scale_grid_to_window, to_screen_point
+from .strategy import MiningStrategy
 from .vision import analyze_grid, annotate_candidates, load_templates
 from .windows import capture_window, click_screen_point, locate_window
 
@@ -28,11 +29,19 @@ def main() -> int:
 
     print(f"window_title={config.window_title!r} live={args.live} templates={len(templates)}")
     control = _setup_control(args.live, args.once, args.no_hotkeys)
+    strategy = MiningStrategy()
 
     while True:
         if control and not control.wait_until_running():
             return 0
-        targets = run_once(config, templates, live=args.live, debug=args.debug, control=control)
+        targets = run_once(
+            config,
+            templates,
+            live=args.live,
+            debug=args.debug,
+            control=control,
+            strategy=strategy,
+        )
         if args.once:
             return 0 if targets else 2
         if control and control.should_stop():
@@ -40,36 +49,37 @@ def main() -> int:
         time.sleep(config.loop_interval_seconds)
 
 
-def run_once(config, templates: list, live: bool, debug: bool, control: ControlState | None = None):
+def run_once(
+    config,
+    templates: list,
+    live: bool,
+    debug: bool,
+    control: ControlState | None = None,
+    strategy: MiningStrategy | None = None,
+):
     window = locate_window(config.window_title)
     image = capture_window(window)
     grid = _grid_for_image(config, image)
     candidates = analyze_grid(image, grid, config.thresholds, templates)
-    required_row = grid.rows - 1
-    targets = choose_click_targets(
+    bottom_row = grid.rows - 1
+    strategy = strategy or MiningStrategy()
+    targets = strategy.select_targets(
         candidates,
         config.thresholds.min_score,
-        max_targets=config.max_targets_per_round,
-        required_row=required_row,
+        bottom_row=bottom_row,
+        max_value_targets=config.max_targets_per_round,
     )
 
     if debug:
         _save_debug_image(config, image, candidates)
 
     if not targets:
-        fallback_targets = choose_fallback_targets(
-            candidates,
-            max_targets=config.max_targets_per_round,
-            required_row=required_row,
-        )
-        if not fallback_targets:
-            print("no target")
-            return []
-        print(f"fallback_targets={len(fallback_targets)}")
-        return _click_targets(window, fallback_targets, config, live, control, label="fallback")
+        print("no target")
+        return []
 
-    print(f"targets={len(targets)}")
-    return _click_targets(window, targets, config, live, control, label="target")
+    label = _target_label(targets, bottom_row)
+    print(f"{label}s={len(targets)}")
+    return _click_targets(window, targets, config, live, control, label=label)
 
 
 def _click_targets(window, targets, config, live: bool, control: ControlState | None, label: str):
@@ -102,6 +112,12 @@ def _setup_control(live: bool, once: bool, no_hotkeys: bool) -> ControlState | N
     return state
 
 
+def _target_label(targets, bottom_row: int) -> str:
+    if targets and all(target.cell.row == bottom_row for target in targets):
+        return "bottom"
+    return "target"
+
+
 def _grid_for_image(config, image):
     if config.base_window_size is None:
         return config.grid
@@ -113,7 +129,6 @@ def _save_debug_image(config, image, candidates) -> None:
     cv2, _np = _cv()
     annotated = annotate_candidates(image, candidates, config.thresholds.min_score)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-    cv2.imwrite(str(config.debug_dir / f"{stamp}-raw.png"), image)
     cv2.imwrite(str(config.debug_dir / f"{stamp}-annotated.png"), annotated)
 
 

@@ -10,7 +10,7 @@ from cishen_clicker.model import Candidate, Cell, GridConfig, Rect
 
 
 class DebugOutputTests(unittest.TestCase):
-    def test_save_debug_image_writes_raw_and_annotated_images(self):
+    def test_save_debug_image_writes_only_annotated_image(self):
         with tempfile.TemporaryDirectory() as tmp:
             debug_dir = Path(tmp)
             config = AppConfig(
@@ -39,7 +39,7 @@ class DebugOutputTests(unittest.TestCase):
 
             raw_images = list(debug_dir.glob("*-raw.png"))
             annotated_images = list(debug_dir.glob("*-annotated.png"))
-            self.assertEqual(len(raw_images), 1)
+            self.assertEqual(len(raw_images), 0)
             self.assertEqual(len(annotated_images), 1)
 
 

@@ -12,7 +12,7 @@
   },
   "rows": 7,
   "cols": 6,
-  "active_start_row": 3,
+  "active_start_row": 0,
   "excluded_cells": [
     {
       "row": 5,
@@ -21,9 +21,9 @@
   ],
   "templates_dir": "templates",
   "debug_dir": "debug",
-  "loop_interval_seconds": 0.1,
+  "loop_interval_seconds": 0.3,
   "click_delay_seconds": 0.03,
-  "max_targets_per_round": 5,
+  "max_targets_per_round": 8,
   "thresholds": {
     "min_score": 0.65,
     "min_brightness": 62,

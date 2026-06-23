@@ -12,6 +12,7 @@ class MiningStrategy:
     value_check_rounds_after_bottom: int = 2
     locked_bottom_cell: tuple[int, int] | None = None
     value_checks_remaining: int = 0
+    pending_value_cells: frozenset[tuple[int, int]] = frozenset()
 
     def select_targets(
         self,
@@ -23,11 +24,27 @@ class MiningStrategy:
         candidates = list(candidates)
         if self.value_checks_remaining > 0:
             value_targets = self._value_targets_above_bottom(candidates, min_score, bottom_row)
-            if value_targets:
+            if self.pending_value_cells:
+                self.value_checks_remaining = 0
+                pending_value_cells = self.pending_value_cells
+                confirmed_targets = [
+                    target
+                    for target in value_targets
+                    if (target.cell.row, target.cell.col) in pending_value_cells
+                ]
+                self.pending_value_cells = frozenset()
+                if confirmed_targets:
+                    self.locked_bottom_cell = None
+                    return _limit(confirmed_targets, max_value_targets)
+            elif value_targets:
                 self.locked_bottom_cell = None
                 self.value_checks_remaining -= 1
-                return _limit(value_targets, max_value_targets)
+                self.pending_value_cells = frozenset(
+                    (target.cell.row, target.cell.col) for target in value_targets
+                )
+                return []
             self.value_checks_remaining = 0
+            self.pending_value_cells = frozenset()
 
         bottom_targets = self._bottom_targets(candidates, bottom_row)
         if bottom_targets:
@@ -72,10 +89,12 @@ class MiningStrategy:
         if bottom_target is None:
             self.locked_bottom_cell = None
             self.value_checks_remaining = 0
+            self.pending_value_cells = frozenset()
             return []
 
         self.locked_bottom_cell = (bottom_target.cell.row, bottom_target.cell.col)
         self.value_checks_remaining = max(0, self.value_check_rounds_after_bottom)
+        self.pending_value_cells = frozenset()
         return [bottom_target for _ in range(max(0, self.bottom_click_count))]
 
     def _locked_bottom_target(self, candidates: list[Candidate]) -> Candidate | None:

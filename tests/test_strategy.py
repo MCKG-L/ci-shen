@@ -26,7 +26,7 @@ class MiningStrategyTests(unittest.TestCase):
             [(6, 0), (6, 0), (6, 0), (6, 0), (6, 0)],
         )
 
-    def test_prioritizes_reachable_valuable_targets_after_bottom_opening(self):
+    def test_confirms_reachable_valuable_targets_after_two_frames(self):
         cells = _cells()
         strategy = MiningStrategy(bottom_click_count=5)
         candidates = [
@@ -38,46 +38,51 @@ class MiningStrategyTests(unittest.TestCase):
         ]
 
         strategy.select_targets(candidates, min_score=0.7, bottom_row=6, max_value_targets=5)
-        targets = strategy.select_targets(
+        pending_targets = strategy.select_targets(
+            candidates,
+            min_score=0.7,
+            bottom_row=6,
+            max_value_targets=5,
+        )
+        confirmed_targets = strategy.select_targets(
             candidates,
             min_score=0.7,
             bottom_row=6,
             max_value_targets=5,
         )
 
+        self.assertEqual(pending_targets, [])
         self.assertEqual(
-            [(target.cell.row, target.cell.col) for target in targets],
+            [(target.cell.row, target.cell.col) for target in confirmed_targets],
             [(5, 1), (4, 1), (3, 0)],
         )
 
-    def test_checks_upper_value_targets_twice_after_bottom_opening(self):
+    def test_returns_to_bottom_when_second_value_frame_does_not_match(self):
         cells = _cells()
         strategy = MiningStrategy(bottom_click_count=5, value_check_rounds_after_bottom=2)
-        candidates = [
+        bottom_and_first_value = [
             Candidate(cell=cells[36], score=0.20, clickable=False, reachable=True),
             Candidate(cell=cells[31], score=0.90, clickable=True, reachable=True),
         ]
+        bottom_and_shifted_value = [
+            Candidate(cell=cells[36], score=0.20, clickable=False, reachable=True),
+            Candidate(cell=cells[25], score=0.90, clickable=True, reachable=True),
+        ]
 
         first_targets = strategy.select_targets(
-            candidates,
+            bottom_and_first_value,
             min_score=0.7,
             bottom_row=6,
             max_value_targets=5,
         )
         second_targets = strategy.select_targets(
-            candidates,
+            bottom_and_first_value,
             min_score=0.7,
             bottom_row=6,
             max_value_targets=5,
         )
         third_targets = strategy.select_targets(
-            candidates,
-            min_score=0.7,
-            bottom_row=6,
-            max_value_targets=5,
-        )
-        fourth_targets = strategy.select_targets(
-            candidates,
+            bottom_and_shifted_value,
             min_score=0.7,
             bottom_row=6,
             max_value_targets=5,
@@ -87,10 +92,9 @@ class MiningStrategyTests(unittest.TestCase):
             [(target.cell.row, target.cell.col) for target in first_targets],
             [(6, 0), (6, 0), (6, 0), (6, 0), (6, 0)],
         )
-        self.assertEqual([(target.cell.row, target.cell.col) for target in second_targets], [(5, 1)])
-        self.assertEqual([(target.cell.row, target.cell.col) for target in third_targets], [(5, 1)])
+        self.assertEqual(second_targets, [])
         self.assertEqual(
-            [(target.cell.row, target.cell.col) for target in fourth_targets],
+            [(target.cell.row, target.cell.col) for target in third_targets],
             [(6, 0), (6, 0), (6, 0), (6, 0), (6, 0)],
         )
 
@@ -147,6 +151,15 @@ class MiningStrategyTests(unittest.TestCase):
         strategy = MiningStrategy(bottom_click_count=5)
         strategy.select_targets(
             [Candidate(cell=cells[38], score=0.20, clickable=False, reachable=True)],
+            min_score=0.7,
+            bottom_row=6,
+            max_value_targets=5,
+        )
+        strategy.select_targets(
+            [
+                Candidate(cell=cells[25], score=0.90, clickable=True, reachable=True),
+                Candidate(cell=cells[38], score=0.20, clickable=False, reachable=True),
+            ],
             min_score=0.7,
             bottom_row=6,
             max_value_targets=5,

@@ -30,7 +30,7 @@
     "min_saturation": 28,
     "min_content_score": 0.18,
     "template_threshold": 0.72,
-    "min_reachable_brightness": 75,
+    "min_reachable_brightness": 75.0,
     "min_reachable_bright_pixel_ratio": 0.5,
     "min_mineral_color_ratio": 0.035
   }

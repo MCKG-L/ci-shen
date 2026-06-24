@@ -56,6 +56,7 @@ def run_once(
     debug: bool,
     control: ControlState | None = None,
     strategy: MiningStrategy | None = None,
+    logger=print,
 ):
     window = locate_window(config.window_title)
     image = capture_window(window)
@@ -74,18 +75,18 @@ def run_once(
         _save_debug_image(config, image, candidates)
 
     if not targets:
-        print("no target")
+        logger("no target")
         return []
 
     label = _target_label(targets, bottom_row)
-    print(f"{label}s={len(targets)}")
-    return _click_targets(window, targets, config, live, control, label=label)
+    logger(f"{label}s={len(targets)}")
+    return _click_targets(window, targets, config, live, control, label=label, logger=logger)
 
 
-def _click_targets(window, targets, config, live: bool, control: ControlState | None, label: str):
+def _click_targets(window, targets, config, live: bool, control: ControlState | None, label: str, logger=print):
     for index, target in enumerate(targets, start=1):
         screen_point = to_screen_point((window.left, window.top), target.cell.center)
-        print(
+        logger(
             f"{label} {index}/{len(targets)} row={target.cell.row} col={target.cell.col} "
             f"score={target.score:.2f} reason={target.reason} screen={screen_point}"
         )

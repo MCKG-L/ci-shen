@@ -16,6 +16,7 @@ ENV/
 # Build and packaging output
 build/
 dist/
+docs/
 *.zip
 *.egg-info/
 .eggs/

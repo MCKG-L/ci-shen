@@ -72,6 +72,7 @@ class GuiStartTests(unittest.TestCase):
             window_title = "game"
             templates_dir = "templates"
             loop_interval_seconds = 0
+            tool_interval_loops = 4
             debug_dir = None
 
         _load_config.return_value = Config()
@@ -129,6 +130,7 @@ class GuiStartTests(unittest.TestCase):
             window_title = "game"
             templates_dir = "templates"
             loop_interval_seconds = 0
+            tool_interval_loops = 4
             debug_dir = None
 
         _load_config.return_value = Config()

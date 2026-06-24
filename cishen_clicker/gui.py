@@ -18,6 +18,7 @@ try:
     from .gui_config import CONFIG_FIELDS, apply_gui_values, extract_gui_values, load_raw_config, save_raw_config
     from .notice import NOTICE_TEXT, NOTICE_TITLE
     from .strategy import MiningStrategy
+    from .tool_usage import ToolUsageState
     from .vision import load_templates
 except ImportError:
     if __package__ not in {None, ""}:
@@ -33,6 +34,7 @@ except ImportError:
     from cishen_clicker.gui_config import CONFIG_FIELDS, apply_gui_values, extract_gui_values, load_raw_config, save_raw_config
     from cishen_clicker.notice import NOTICE_TEXT, NOTICE_TITLE
     from cishen_clicker.strategy import MiningStrategy
+    from cishen_clicker.tool_usage import ToolUsageState
     from cishen_clicker.vision import load_templates
 
 
@@ -83,10 +85,19 @@ class MiningGui:
         for index, field in enumerate(CONFIG_FIELDS):
             row = index // 2
             col = (index % 2) * 2
-            ttk.Label(params_frame, text=field.label).grid(row=row, column=col, sticky=tk.W, padx=8, pady=6)
-            ttk.Entry(params_frame, textvariable=self.field_vars[field.key], width=22).grid(
-                row=row, column=col + 1, sticky=tk.EW, padx=(4, 12), pady=6
-            )
+            if field.kind == "check":
+                ttk.Checkbutton(
+                    params_frame,
+                    text=field.label,
+                    variable=self.field_vars[field.key],
+                    onvalue="true",
+                    offvalue="false",
+                ).grid(row=row, column=col, columnspan=2, sticky=tk.W, padx=8, pady=6)
+            else:
+                ttk.Label(params_frame, text=field.label).grid(row=row, column=col, sticky=tk.W, padx=8, pady=6)
+                ttk.Entry(params_frame, textvariable=self.field_vars[field.key], width=22).grid(
+                    row=row, column=col + 1, sticky=tk.EW, padx=(4, 12), pady=6
+                )
         params_frame.columnconfigure(1, weight=1)
         params_frame.columnconfigure(3, weight=1)
 
@@ -184,6 +195,7 @@ class MiningGui:
             templates = load_templates(config.templates_dir)
 
             strategy = MiningStrategy()
+            tool_state = ToolUsageState(interval_loops=config.tool_interval_loops)
             self._log(f"窗口标题={config.window_title!r} 模板数={len(templates)}")
 
             while not control.should_stop():
@@ -196,6 +208,7 @@ class MiningGui:
                     debug=False,
                     control=control,
                     strategy=strategy,
+                    tool_state=tool_state,
                     logger=self._log,
                 )
                 if control.should_stop():

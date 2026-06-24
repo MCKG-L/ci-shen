@@ -33,6 +33,11 @@ class LoginConflictTests(unittest.TestCase):
             click_delay_seconds=0.2,
             click_hold_seconds=0.08,
             max_targets_per_round=5,
+            use_drill=False,
+            use_bomb=False,
+            tool_interval_loops=4,
+            drill_button_ratio=(0.28, 0.84),
+            bomb_button_ratio=(0.74, 0.84),
         )
         control = ControlState()
         control.start()

@@ -22,6 +22,14 @@ class FakeEntry:
         return None
 
 
+class FakeCheckbutton:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def grid(self, *args, **kwargs):
+        return None
+
+
 class FakeLabel:
     def __init__(self, *args, **kwargs):
         self.text = kwargs.get("text", "")
@@ -132,14 +140,21 @@ class MiningGuiWindowTests(unittest.TestCase):
         "click_hold_seconds": 0.08,
         "loop_interval_seconds": 0.3,
         "max_targets_per_round": 8,
+        "tool_interval_loops": 3,
+        "use_drill": True,
+        "use_bomb": False,
     })
     @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
         "click_delay_seconds": "0.03",
         "click_hold_seconds": "0.08",
         "loop_interval_seconds": "0.3",
         "max_targets_per_round": "8",
+        "tool_interval_loops": "3",
+        "use_drill": "true",
+        "use_bomb": "false",
     })
     @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
     def test_window_is_fixed_size_and_uses_three_fields(
         self,
         _install_hotkeys,
@@ -159,6 +174,9 @@ class MiningGuiWindowTests(unittest.TestCase):
             "click_hold_seconds",
             "loop_interval_seconds",
             "max_targets_per_round",
+            "tool_interval_loops",
+            "use_drill",
+            "use_bomb",
         ])
 
     @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
@@ -173,14 +191,21 @@ class MiningGuiWindowTests(unittest.TestCase):
         "click_hold_seconds": 0.08,
         "loop_interval_seconds": 0.3,
         "max_targets_per_round": 8,
+        "tool_interval_loops": 3,
+        "use_drill": True,
+        "use_bomb": False,
     })
     @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
         "click_delay_seconds": "0.03",
         "click_hold_seconds": "0.08",
         "loop_interval_seconds": "0.3",
         "max_targets_per_round": "8",
+        "tool_interval_loops": "3",
+        "use_drill": "true",
+        "use_bomb": "false",
     })
     @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
     def test_window_shows_free_learning_only_notice(
         self,
         _install_hotkeys,

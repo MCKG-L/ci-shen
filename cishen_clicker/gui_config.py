@@ -16,11 +16,21 @@ def _parse_optional_int(text: str) -> int | None:
     return int(text)
 
 
+def _parse_bool(text: str) -> bool:
+    value = text.strip().lower()
+    if value in {"1", "true", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "no", "n", "off", ""}:
+        return False
+    raise ValueError(text)
+
+
 @dataclass(frozen=True)
 class ConfigField:
     key: str
     label: str
     parser: Parser
+    kind: str = "entry"
 
 
 CONFIG_FIELDS: tuple[ConfigField, ...] = (
@@ -28,6 +38,9 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("click_hold_seconds", "按下保持（秒）", float),
     ConfigField("loop_interval_seconds", "循环间隔（秒）", float),
     ConfigField("max_targets_per_round", "每轮最多目标数", _parse_optional_int),
+    ConfigField("tool_interval_loops", "道具间隔循环数", int),
+    ConfigField("use_drill", "使用钻头", _parse_bool, kind="check"),
+    ConfigField("use_bomb", "使用炸药", _parse_bool, kind="check"),
 )
 
 
@@ -43,7 +56,10 @@ def extract_gui_values(raw: dict[str, Any]) -> dict[str, str]:
     values = {}
     for field in CONFIG_FIELDS:
         value = _get_nested(raw, field.key)
-        values[field.key] = "" if value is None else str(value)
+        if field.kind == "check":
+            values[field.key] = "true" if bool(value) else "false"
+        else:
+            values[field.key] = "" if value is None else str(value)
     return values
 
 

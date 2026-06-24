@@ -5,11 +5,12 @@ from cishen_clicker.strategy import MiningStrategy
 
 
 class MiningStrategyTests(unittest.TestCase):
-    def test_starts_with_reachable_bottom_cell_even_when_upper_value_exists(self):
+    def test_starts_with_preferred_middle_bottom_cell_even_when_upper_value_exists(self):
         cells = _cells()
         strategy = MiningStrategy(bottom_click_count=5)
         candidates = [
             Candidate(cell=cells[36], score=0.20, clickable=False, reachable=True),
+            Candidate(cell=cells[38], score=0.20, clickable=False, reachable=True),
             Candidate(cell=cells[31], score=0.90, clickable=True, reachable=True),
             Candidate(cell=cells[25], score=0.91, clickable=True, reachable=True),
         ]
@@ -23,7 +24,7 @@ class MiningStrategyTests(unittest.TestCase):
 
         self.assertEqual(
             [(target.cell.row, target.cell.col) for target in targets],
-            [(6, 0), (6, 0), (6, 0), (6, 0), (6, 0)],
+            [(6, 2), (6, 2), (6, 2), (6, 2), (6, 2)],
         )
 
     def test_confirms_reachable_valuable_targets_after_two_frames(self):
@@ -98,7 +99,7 @@ class MiningStrategyTests(unittest.TestCase):
             [(6, 0), (6, 0), (6, 0), (6, 0), (6, 0)],
         )
 
-    def test_repeats_first_reachable_bottom_cell_when_no_upper_value_exists(self):
+    def test_repeats_preferred_middle_bottom_cell_when_no_upper_value_exists(self):
         cells = _cells()
         strategy = MiningStrategy(bottom_click_count=5)
         candidates = [
@@ -118,7 +119,28 @@ class MiningStrategyTests(unittest.TestCase):
         self.assertEqual(len(targets), 5)
         self.assertEqual(
             [(target.cell.row, target.cell.col) for target in targets],
-            [(6, 1), (6, 1), (6, 1), (6, 1), (6, 1)],
+            [(6, 2), (6, 2), (6, 2), (6, 2), (6, 2)],
+        )
+
+    def test_prefers_bottom_col_three_when_col_two_is_unreachable(self):
+        cells = _cells()
+        strategy = MiningStrategy(bottom_click_count=5)
+        candidates = [
+            Candidate(cell=cells[36], score=0.20, clickable=False, reachable=True),
+            Candidate(cell=cells[39], score=0.20, clickable=False, reachable=True),
+            Candidate(cell=cells[41], score=0.20, clickable=False, reachable=True),
+        ]
+
+        targets = strategy.select_targets(
+            candidates,
+            min_score=0.7,
+            bottom_row=6,
+            max_value_targets=5,
+        )
+
+        self.assertEqual(
+            [(target.cell.row, target.cell.col) for target in targets],
+            [(6, 3), (6, 3), (6, 3), (6, 3), (6, 3)],
         )
 
     def test_keeps_locked_bottom_cell_while_it_remains_reachable(self):
@@ -186,7 +208,7 @@ class MiningStrategyTests(unittest.TestCase):
 
         self.assertEqual(
             [(target.cell.row, target.cell.col) for target in targets],
-            [(6, 0), (6, 0), (6, 0), (6, 0), (6, 0)],
+            [(6, 2), (6, 2), (6, 2), (6, 2), (6, 2)],
         )
 
 

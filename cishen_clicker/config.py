@@ -32,6 +32,11 @@ class AppConfig:
     click_delay_seconds: float
     click_hold_seconds: float
     max_targets_per_round: int | None
+    use_drill: bool
+    use_bomb: bool
+    tool_interval_loops: int
+    drill_button_ratio: tuple[float, float]
+    bomb_button_ratio: tuple[float, float]
 
 
 def load_config(path: Path) -> AppConfig:
@@ -73,6 +78,11 @@ def load_config(path: Path) -> AppConfig:
         click_delay_seconds=float(raw.get("click_delay_seconds", 0.12)),
         click_hold_seconds=float(raw.get("click_hold_seconds", 0.08)),
         max_targets_per_round=_load_optional_int(raw.get("max_targets_per_round")),
+        use_drill=bool(raw.get("use_drill", False)),
+        use_bomb=bool(raw.get("use_bomb", False)),
+        tool_interval_loops=max(1, int(raw.get("tool_interval_loops", 4))),
+        drill_button_ratio=_load_point_ratio(raw.get("drill_button_ratio"), default=(0.28, 0.84)),
+        bomb_button_ratio=_load_point_ratio(raw.get("bomb_button_ratio"), default=(0.74, 0.84)),
     )
 
 
@@ -93,6 +103,12 @@ def _load_optional_int(raw: Any) -> int | None:
     if raw is None:
         return None
     return int(raw)
+
+
+def _load_point_ratio(raw: Any, default: tuple[float, float]) -> tuple[float, float]:
+    if raw is None:
+        return default
+    return (float(raw["x"]), float(raw["y"]))
 
 
 def _resolve(config_path: Path, value: Any) -> Path:

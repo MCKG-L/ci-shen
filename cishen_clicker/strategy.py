@@ -82,7 +82,7 @@ class MiningStrategy:
             for candidate in candidates
             if candidate.reachable and candidate.cell.row == bottom_row
         ]
-        return min(bottom_targets, key=lambda candidate: candidate.cell.col, default=None)
+        return min(bottom_targets, key=_bottom_priority, default=None)
 
     def _bottom_targets(self, candidates: list[Candidate], bottom_row: int) -> list[Candidate]:
         bottom_target = self._bottom_target(candidates, bottom_row)
@@ -110,3 +110,9 @@ def _limit(targets: list[Candidate], max_targets: int | None) -> list[Candidate]
     if max_targets is None:
         return targets
     return targets[: max(0, max_targets)]
+
+
+def _bottom_priority(candidate: Candidate) -> tuple[int, int]:
+    preferred_cols = {2: 0, 3: 1}
+    col = candidate.cell.col
+    return (preferred_cols.get(col, 2), col)

@@ -12,6 +12,9 @@ class GuiConfigTests(unittest.TestCase):
                 "click_hold_seconds",
                 "loop_interval_seconds",
                 "max_targets_per_round",
+                "tool_interval_loops",
+                "use_drill",
+                "use_bomb",
             ],
         )
 
@@ -21,6 +24,9 @@ class GuiConfigTests(unittest.TestCase):
             "click_hold_seconds": 0.08,
             "loop_interval_seconds": 0.3,
             "max_targets_per_round": 8,
+            "tool_interval_loops": 3,
+            "use_drill": True,
+            "use_bomb": False,
             "thresholds": {
                 "min_score": 0.65,
                 "min_reachable_brightness": 75,
@@ -36,6 +42,9 @@ class GuiConfigTests(unittest.TestCase):
                 "click_hold_seconds": "0.08",
                 "loop_interval_seconds": "0.3",
                 "max_targets_per_round": "8",
+                "tool_interval_loops": "3",
+                "use_drill": "true",
+                "use_bomb": "false",
             },
         )
 
@@ -45,6 +54,9 @@ class GuiConfigTests(unittest.TestCase):
             "click_hold_seconds": 0.08,
             "loop_interval_seconds": 0.5,
             "max_targets_per_round": 5,
+            "tool_interval_loops": 4,
+            "use_drill": False,
+            "use_bomb": False,
             "thresholds": {"min_score": 0.7},
         }
 
@@ -55,6 +67,9 @@ class GuiConfigTests(unittest.TestCase):
                 "click_hold_seconds": "0.09",
                 "loop_interval_seconds": "0.25",
                 "max_targets_per_round": "",
+                "tool_interval_loops": "2",
+                "use_drill": "true",
+                "use_bomb": "false",
             },
         )
 
@@ -62,6 +77,9 @@ class GuiConfigTests(unittest.TestCase):
         self.assertEqual(updated["click_hold_seconds"], 0.09)
         self.assertEqual(updated["loop_interval_seconds"], 0.25)
         self.assertIsNone(updated["max_targets_per_round"])
+        self.assertEqual(updated["tool_interval_loops"], 2)
+        self.assertTrue(updated["use_drill"])
+        self.assertFalse(updated["use_bomb"])
         self.assertEqual(updated["thresholds"]["min_score"], 0.7)
         self.assertEqual(raw["click_delay_seconds"], 0.2)
 

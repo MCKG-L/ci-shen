@@ -40,7 +40,12 @@ python -m pip install -r requirements.txt
 - `rows` / `cols`：矿区网格行列数。
 - `click_hold_seconds`：窗口消息点击时，鼠标按下到抬起之间的保持时间；点击无效时可以适当调大。
 - `click_delay_seconds`：两次点击之间的等待时间；点击过快导致无效时可以适当调大。
+- `use_drill` / `use_bomb`：是否使用钻头、炸药道具，GUI 中可以直接勾选。
+- `tool_interval_loops`：每隔多少次底部兜底循环尝试使用一次道具，默认 4。
+- `drill_button_ratio` / `bomb_button_ratio`：道具按钮在窗口内的相对位置，窗口大小变化时会按比例换算。
 - `thresholds`：识别阈值，误点多就提高 `min_score`，漏点多就降低。
+
+启用道具后，程序会在选中最后一行兜底可达矿之后、点击该矿之前，把启用的道具放到该矿上方一格的空白区域。默认两个道具都关闭，确认按钮位置无误后再开启。
 
 当前 `mine_area` 是按你发的截图估算的，实际窗口大小不同就需要重新标定。
 

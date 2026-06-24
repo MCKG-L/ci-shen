@@ -25,6 +25,17 @@
   "click_delay_seconds": 0.12,
   "click_hold_seconds": 0.08,
   "max_targets_per_round": 8,
+  "use_drill": false,
+  "use_bomb": false,
+  "tool_interval_loops": 4,
+  "drill_button_ratio": {
+    "x": 0.28,
+    "y": 0.84
+  },
+  "bomb_button_ratio": {
+    "x": 0.74,
+    "y": 0.84
+  },
   "thresholds": {
     "min_score": 0.65,
     "min_brightness": 62,

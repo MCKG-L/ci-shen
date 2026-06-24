@@ -2,23 +2,34 @@ from __future__ import annotations
 
 import ctypes
 import sys
+import time
 from ctypes import wintypes
 from dataclasses import dataclass
 
 
+WM_LBUTTONDOWN = 0x0201
+WM_LBUTTONUP = 0x0202
+MK_LBUTTON = 0x0001
+
+
 @dataclass(frozen=True)
 class WindowRect:
+    hwnd: int
     left: int
     top: int
     width: int
     height: int
 
 
-def client_area_to_window_rect(client_origin: tuple[int, int], client_size: tuple[int, int]) -> WindowRect:
+def client_area_to_window_rect(
+    hwnd: int,
+    client_origin: tuple[int, int],
+    client_size: tuple[int, int],
+) -> WindowRect:
     width, height = client_size
     if width <= 0 or height <= 0:
         raise RuntimeError(f"Matched window has an empty client area: {client_size}")
-    return WindowRect(left=client_origin[0], top=client_origin[1], width=width, height=height)
+    return WindowRect(hwnd=hwnd, left=client_origin[0], top=client_origin[1], width=width, height=height)
 
 
 def locate_window(title_keyword: str) -> WindowRect:
@@ -55,13 +66,29 @@ def capture_window(rect: WindowRect):
         return bgra[:, :, :3]
 
 
-def click_screen_point(point: tuple[int, int]) -> None:
-    try:
-        import pyautogui
-    except ModuleNotFoundError as exc:
-        raise RuntimeError("Missing pyautogui. Install dependencies with: python -m pip install -r requirements.txt") from exc
+def click_window_point(
+    window: WindowRect,
+    screen_point: tuple[int, int],
+    hold_seconds: float = 0.08,
+    user32=None,
+) -> None:
+    if not sys.platform.startswith("win") and user32 is None:
+        raise RuntimeError("Window message click is only supported on Windows.")
 
-    pyautogui.click(point[0], point[1])
+    user32 = user32 or ctypes.windll.user32
+    client_x = round(screen_point[0] - window.left)
+    client_y = round(screen_point[1] - window.top)
+    lparam = make_lparam(client_x, client_y)
+
+    if not user32.PostMessageW(wintypes.HWND(window.hwnd), WM_LBUTTONDOWN, MK_LBUTTON, lparam):
+        raise RuntimeError("Failed to send mouse down message to window.")
+    time.sleep(max(0.0, hold_seconds))
+    if not user32.PostMessageW(wintypes.HWND(window.hwnd), WM_LBUTTONUP, 0, lparam):
+        raise RuntimeError("Failed to send mouse up message to window.")
+
+
+def make_lparam(x: int, y: int) -> int:
+    return (y & 0xFFFF) << 16 | (x & 0xFFFF)
 
 
 def _set_process_dpi_awareness() -> None:
@@ -133,6 +160,7 @@ def _client_rect_for_hwnd(hwnd: int, user32) -> WindowRect:
         raise RuntimeError("Failed to convert client origin to screen coordinates.")
 
     return client_area_to_window_rect(
+        hwnd=hwnd,
         client_origin=(int(point.x), int(point.y)),
         client_size=(int(rect.right - rect.left), int(rect.bottom - rect.top)),
     )

@@ -129,11 +129,13 @@ class MiningGuiWindowTests(unittest.TestCase):
     @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
     @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
         "click_delay_seconds": 0.03,
+        "click_hold_seconds": 0.08,
         "loop_interval_seconds": 0.3,
         "max_targets_per_round": 8,
     })
     @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
         "click_delay_seconds": "0.03",
+        "click_hold_seconds": "0.08",
         "loop_interval_seconds": "0.3",
         "max_targets_per_round": "8",
     })
@@ -154,6 +156,7 @@ class MiningGuiWindowTests(unittest.TestCase):
         self.assertEqual(root.maxsize_calls, [(760, 620)])
         self.assertEqual(list(gui.field_vars.keys()), [
             "click_delay_seconds",
+            "click_hold_seconds",
             "loop_interval_seconds",
             "max_targets_per_round",
         ])
@@ -167,11 +170,13 @@ class MiningGuiWindowTests(unittest.TestCase):
     @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
     @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
         "click_delay_seconds": 0.03,
+        "click_hold_seconds": 0.08,
         "loop_interval_seconds": 0.3,
         "max_targets_per_round": 8,
     })
     @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
         "click_delay_seconds": "0.03",
+        "click_hold_seconds": "0.08",
         "loop_interval_seconds": "0.3",
         "max_targets_per_round": "8",
     })

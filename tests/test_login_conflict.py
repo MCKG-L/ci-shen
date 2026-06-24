@@ -31,12 +31,13 @@ class LoginConflictTests(unittest.TestCase):
             debug_dir=None,
             loop_interval_seconds=0.5,
             click_delay_seconds=0.2,
+            click_hold_seconds=0.08,
             max_targets_per_round=5,
         )
         control = ControlState()
         control.start()
         logs = []
-        locate_window.return_value = WindowRect(left=0, top=0, width=600, height=1200)
+        locate_window.return_value = WindowRect(hwnd=1234, left=0, top=0, width=600, height=1200)
         capture_window.return_value = np.zeros((1200, 600, 3), dtype=np.uint8)
 
         targets = run_once(

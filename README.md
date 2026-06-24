@@ -38,6 +38,8 @@ python -m pip install -r requirements.txt
 - `window_title`：窗口标题关键字，能匹配到微信小程序窗口即可。
 - `mine_area`：矿区相对窗口左上角的矩形坐标。
 - `rows` / `cols`：矿区网格行列数。
+- `click_hold_seconds`：窗口消息点击时，鼠标按下到抬起之间的保持时间；点击无效时可以适当调大。
+- `click_delay_seconds`：两次点击之间的等待时间；点击过快导致无效时可以适当调大。
 - `thresholds`：识别阈值，误点多就提高 `min_score`，漏点多就降低。
 
 当前 `mine_area` 是按你发的截图估算的，实际窗口大小不同就需要重新标定。
@@ -57,6 +59,8 @@ python -m cishen_clicker --once --debug
 ```powershell
 python -m cishen_clicker --live
 ```
+
+当前点击默认使用 Windows 窗口消息发送，不会移动系统真实鼠标，因此运行时用户仍然可以控制鼠标。
 
 停止脚本用 `Ctrl+C`。
 

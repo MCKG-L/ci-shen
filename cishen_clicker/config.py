@@ -30,6 +30,7 @@ class AppConfig:
     debug_dir: Path
     loop_interval_seconds: float
     click_delay_seconds: float
+    click_hold_seconds: float
     max_targets_per_round: int | None
 
 
@@ -69,7 +70,8 @@ def load_config(path: Path) -> AppConfig:
         templates_dir=_resolve(path, raw.get("templates_dir", "templates")),
         debug_dir=_resolve(path, raw.get("debug_dir", "debug")),
         loop_interval_seconds=float(raw.get("loop_interval_seconds", 0.5)),
-        click_delay_seconds=float(raw.get("click_delay_seconds", 0.2)),
+        click_delay_seconds=float(raw.get("click_delay_seconds", 0.12)),
+        click_hold_seconds=float(raw.get("click_hold_seconds", 0.08)),
         max_targets_per_round=_load_optional_int(raw.get("max_targets_per_round")),
     )
 

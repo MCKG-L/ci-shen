@@ -28,11 +28,10 @@ coverage.xml
 # Runtime/debug output
 debug/
 *.log
-
+*.zip
 # Local-only config variants
 *.local.json
 config.local.json
-
 # Editor and OS noise
 .idea/
 .vscode/

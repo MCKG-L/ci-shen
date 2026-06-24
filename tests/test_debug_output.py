@@ -22,6 +22,7 @@ class DebugOutputTests(unittest.TestCase):
                 debug_dir=debug_dir,
                 loop_interval_seconds=0.5,
                 click_delay_seconds=0.2,
+                click_hold_seconds=0.08,
                 max_targets_per_round=None,
             )
             image = np.zeros((10, 10, 3), dtype=np.uint8)

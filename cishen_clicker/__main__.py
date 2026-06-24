@@ -10,7 +10,7 @@ from .control import ControlState, Hotkeys, install_hotkeys
 from .model import scale_grid_to_window, to_screen_point
 from .strategy import MiningStrategy
 from .vision import analyze_grid, annotate_candidates, detect_login_conflict_dialog, load_templates
-from .windows import capture_window, click_screen_point, locate_window
+from .windows import capture_window, click_window_point, locate_window
 
 
 def main() -> int:
@@ -100,7 +100,7 @@ def _click_targets(window, targets, config, live: bool, control: ControlState | 
         if live:
             if control and not control.is_running():
                 return targets[: index - 1]
-            click_screen_point(screen_point)
+            click_window_point(window, screen_point, hold_seconds=config.click_hold_seconds)
             time.sleep(config.click_delay_seconds)
     return targets
 

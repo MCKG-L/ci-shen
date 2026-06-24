@@ -25,6 +25,7 @@ class ConfigField:
 
 CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("click_delay_seconds", "点击间隔（秒）", float),
+    ConfigField("click_hold_seconds", "按下保持（秒）", float),
     ConfigField("loop_interval_seconds", "循环间隔（秒）", float),
     ConfigField("max_targets_per_round", "每轮最多目标数", _parse_optional_int),
 )

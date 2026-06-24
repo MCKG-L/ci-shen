@@ -22,7 +22,8 @@
   "templates_dir": "templates",
   "debug_dir": "debug",
   "loop_interval_seconds": 0.3,
-  "click_delay_seconds": 0.03,
+  "click_delay_seconds": 0.12,
+  "click_hold_seconds": 0.08,
   "max_targets_per_round": 8,
   "thresholds": {
     "min_score": 0.65,

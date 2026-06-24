@@ -1,0 +1,6 @@
+numpy==1.21.6
+opencv-python==4.5.5.64
+mss==7.0.1
+pyautogui==0.9.54
+pygetwindow==0.0.9
+keyboard==0.13.5

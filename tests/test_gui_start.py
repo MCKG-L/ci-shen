@@ -97,6 +97,61 @@ class GuiStartTests(unittest.TestCase):
 
         self.assertTrue(control.should_stop())
 
+    @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
+    @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
+        "click_delay_seconds": 0.03,
+        "loop_interval_seconds": 0.3,
+        "max_targets_per_round": 8,
+    })
+    @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
+        "click_delay_seconds": "0.03",
+        "loop_interval_seconds": "0.3",
+        "max_targets_per_round": "8",
+    })
+    @mock.patch("cishen_clicker.gui.load_config")
+    @mock.patch("cishen_clicker.gui.load_templates", return_value=[])
+    @mock.patch("cishen_clicker.gui.MiningStrategy", return_value=object())
+    @mock.patch("cishen_clicker.gui.run_once")
+    def test_worker_loop_stops_when_run_once_reports_login_conflict(
+        self,
+        run_once,
+        _strategy,
+        _load_templates,
+        _load_config,
+        _extract_gui_values,
+        _load_raw_config,
+        _install_hotkeys,
+    ):
+        control = ControlState()
+        control.start()
+
+        class Config:
+            window_title = "game"
+            templates_dir = "templates"
+            loop_interval_seconds = 0
+            debug_dir = None
+
+        _load_config.return_value = Config()
+
+        def fake_run_once(*args, **kwargs):
+            kwargs["control"].stop()
+            return []
+
+        run_once.side_effect = fake_run_once
+
+        with mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar), \
+             mock.patch("cishen_clicker.gui.ttk.Frame"), \
+             mock.patch("cishen_clicker.gui.ttk.LabelFrame"), \
+             mock.patch("cishen_clicker.gui.ttk.Label"), \
+             mock.patch("cishen_clicker.gui.ttk.Entry"), \
+             mock.patch("cishen_clicker.gui.ttk.Button"), \
+             mock.patch("cishen_clicker.gui.ScrolledText"):
+            gui = MiningGui(DummyRoot())
+
+        gui._worker_loop("config.json", control)
+
+        self.assertTrue(control.should_stop())
+
 
 if __name__ == "__main__":
     unittest.main()

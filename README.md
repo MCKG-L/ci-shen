@@ -21,6 +21,16 @@ py -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
+## 打包给别人使用
+
+如果要生成带 `CISHEN.exe` 的压缩包，推荐直接运行：
+
+```powershell
+.\pack.ps1
+```
+
+打包脚本会使用 Python 3.7 和旧 Windows 兼容依赖生成 `CISHEN.zip`。如果别人运行时看到缺少 `api-ms-win-core-path-l1-1-0.dll`，说明之前的包大概率是用 Python 3.11 等较新的环境打出来的，请重新运行 `.\pack.ps1` 生成压缩包。不要从网上单独下载 DLL 放进程序目录。
+
 ## 调整配置
 
 编辑 `config.json`：

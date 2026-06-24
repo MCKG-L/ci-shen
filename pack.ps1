@@ -1,13 +1,25 @@
 $ErrorActionPreference = "Stop"
 
-python -m pip install --upgrade pyinstaller pyinstaller-hooks-contrib
+$Python = "py"
+$PythonVersion = "-3.7"
 
-python -m PyInstaller `
+$PipOptions = @("--disable-pip-version-check", "--prefer-binary")
+
+& $Python $PythonVersion -m pip install @PipOptions --upgrade "pip<24.1" "setuptools<69" wheel
+& $Python $PythonVersion -m pip install @PipOptions --upgrade -r requirements-pack-win7.txt
+& $Python $PythonVersion -m pip install @PipOptions --upgrade "pyinstaller==5.13.2" "pyinstaller-hooks-contrib==2023.10"
+
+foreach ($Path in @("build", "dist", "CISHEN.zip")) {
+  if (Test-Path -LiteralPath $Path) {
+    Remove-Item -LiteralPath $Path -Recurse -Force
+  }
+}
+
+& $Python $PythonVersion -m PyInstaller `
   --noconfirm `
   --clean `
   --onedir `
   --windowed `
-  --contents-directory . `
   --name CISHEN `
   --add-data "config.json;." `
   --add-data "NOTICE.txt;." `

@@ -42,6 +42,48 @@ def analyze_grid(image, grid: GridConfig, thresholds: Thresholds, templates: lis
     return candidates
 
 
+def detect_login_conflict_dialog(image) -> bool:
+    cv2, np = _cv()
+    if image.size == 0:
+        return False
+
+    height, width = image.shape[:2]
+    if height < 200 or width < 200:
+        return False
+
+    center = image[
+        round(height * 0.30) : round(height * 0.72),
+        round(width * 0.08) : round(width * 0.92),
+    ]
+    lower_center = image[
+        round(height * 0.48) : round(height * 0.68),
+        round(width * 0.16) : round(width * 0.84),
+    ]
+    if center.size == 0 or lower_center.size == 0:
+        return False
+
+    hsv_center = cv2.cvtColor(center, cv2.COLOR_BGR2HSV)
+    white_mask = (
+        (hsv_center[:, :, 1] <= 35)
+        & (hsv_center[:, :, 2] >= 215)
+    )
+    white_ratio = float(np.count_nonzero(white_mask) / white_mask.size)
+
+    hsv_lower = cv2.cvtColor(lower_center, cv2.COLOR_BGR2HSV)
+    hue = hsv_lower[:, :, 0]
+    saturation = hsv_lower[:, :, 1]
+    value = hsv_lower[:, :, 2]
+    green_mask = (
+        (hue >= 45)
+        & (hue <= 85)
+        & (saturation >= 80)
+        & (value >= 120)
+    )
+    green_ratio = float(np.count_nonzero(green_mask) / green_mask.size)
+
+    return white_ratio >= 0.42 and green_ratio >= 0.035
+
+
 def score_cell(cell_image, thresholds: Thresholds, templates: list) -> tuple[float, str]:
     cv2, np = _cv()
     if cell_image.size == 0:

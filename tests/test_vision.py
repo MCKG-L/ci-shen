@@ -4,10 +4,23 @@ import numpy as np
 
 from cishen_clicker.config import Thresholds
 from cishen_clicker.model import GridConfig, Rect
-from cishen_clicker.vision import analyze_grid, score_cell
+from cishen_clicker.vision import analyze_grid, detect_login_conflict_dialog, score_cell
 
 
 class VisionScoringTests(unittest.TestCase):
+    def test_detect_login_conflict_dialog_with_confirm_button(self):
+        image = np.full((1200, 600, 3), (48, 58, 56), dtype=np.uint8)
+        image[390:760, 70:530] = (245, 245, 245)
+        image[620:705, 320:500] = (80, 195, 30)
+
+        self.assertTrue(detect_login_conflict_dialog(image))
+
+    def test_detect_login_conflict_dialog_rejects_plain_game_screen(self):
+        image = np.full((1200, 600, 3), (48, 58, 56), dtype=np.uint8)
+        image[620:705, 320:500] = (80, 195, 30)
+
+        self.assertFalse(detect_login_conflict_dialog(image))
+
     def test_dark_unreachable_cell_is_rejected_before_mineral_scoring(self):
         image = np.full((80, 80, 3), (42, 55, 34), dtype=np.uint8)
 

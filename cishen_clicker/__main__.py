@@ -9,7 +9,7 @@ from .config import load_config
 from .control import ControlState, Hotkeys, install_hotkeys
 from .model import scale_grid_to_window, to_screen_point
 from .strategy import MiningStrategy
-from .vision import analyze_grid, annotate_candidates, load_templates
+from .vision import analyze_grid, annotate_candidates, detect_login_conflict_dialog, load_templates
 from .windows import capture_window, click_screen_point, locate_window
 
 
@@ -60,6 +60,12 @@ def run_once(
 ):
     window = locate_window(config.window_title)
     image = capture_window(window)
+    if detect_login_conflict_dialog(image):
+        logger("检测到账号在他处登录提示，已强制结束程序。")
+        if control:
+            control.stop()
+        return []
+
     grid = _grid_for_image(config, image)
     candidates = analyze_grid(image, grid, config.thresholds, templates)
     bottom_row = grid.rows - 1

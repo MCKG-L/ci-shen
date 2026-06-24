@@ -1,158 +1,95 @@
+import queue
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from cishen_clicker.control import ControlState
 from cishen_clicker.gui import MiningGui
+from cishen_clicker.workspace_config import WorkspaceConfig
 
 
-class DummyRoot:
-    def after(self, delay, callback):
-        return None
+class FakeModuleSpec:
+    label = "测试模块"
 
-    def title(self, text):
-        return None
+    def __init__(self):
+        self.runtime = type("Runtime", (), {"config": type("Config", (), {"loop_interval_seconds": 0})()})()
+        self.run_calls = []
 
-    def geometry(self, value):
-        return None
+    def create_runtime(self, raw_config, config_dir):
+        self.raw_config = raw_config
+        self.config_dir = config_dir
+        return self.runtime
 
-    def resizable(self, width, height):
-        return None
-
-    def minsize(self, width, height):
-        return None
-
-    def maxsize(self, width, height):
-        return None
-
-    def protocol(self, name, callback):
-        return None
+    def run_cycle(self, runtime, **kwargs):
+        self.run_calls.append((runtime, kwargs))
+        kwargs["control"].stop()
+        return []
 
 
-class FakeStringVar:
-    def __init__(self, value=""):
-        self.value = value
+class FakeStatusVar:
+    def __init__(self) -> None:
+        self.values = []
 
     def set(self, value):
-        self.value = value
+        self.values.append(value)
 
-    def get(self):
-        return self.value
+
+class FakeStoppedControl:
+    def __init__(self) -> None:
+        self.start_calls = 0
+
+    def start(self) -> None:
+        self.start_calls += 1
+
+    def should_stop(self) -> bool:
+        return True
+
+
+class FakeAliveWorker:
+    def is_alive(self) -> bool:
+        return True
 
 
 class GuiStartTests(unittest.TestCase):
-    @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
-    @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
-        "click_delay_seconds": 0.03,
-        "loop_interval_seconds": 0.3,
-        "max_targets_per_round": 8,
-    })
-    @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
-        "click_delay_seconds": "0.03",
-        "loop_interval_seconds": "0.3",
-        "max_targets_per_round": "8",
-    })
-    @mock.patch("cishen_clicker.gui.load_config")
-    @mock.patch("cishen_clicker.gui.load_templates", return_value=[])
-    @mock.patch("cishen_clicker.gui.MiningStrategy", return_value=object())
-    @mock.patch("cishen_clicker.gui.run_once")
-    def test_worker_loop_defaults_to_live_clicking(
-        self,
-        run_once,
-        _strategy,
-        _load_templates,
-        _load_config,
-        _extract_gui_values,
-        _load_raw_config,
-        _install_hotkeys,
-    ):
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={"mining": {"window_title": "game"}, "dungeon": {}},
+    ))
+    def test_worker_loop_dispatches_to_active_module(self, _load_workspace_config):
         control = ControlState()
         control.start()
+        module_spec = FakeModuleSpec()
+        gui = MiningGui.__new__(MiningGui)
+        gui.module_options = ["mining", "dungeon"]
+        gui.log_queue = queue.Queue()
+        gui._log = lambda message: gui.log_queue.put(message)
 
-        class Config:
-            window_title = "game"
-            templates_dir = "templates"
-            loop_interval_seconds = 0
-            tool_interval_loops = 4
-            debug_dir = None
+        with mock.patch("cishen_clicker.gui.get_module_spec", return_value=module_spec):
+            gui._worker_loop(Path("D:/fake/config.json"), control)
 
-        _load_config.return_value = Config()
-
-        def fake_run_once(*args, **kwargs):
-            self.assertTrue(kwargs["live"])
-            self.assertFalse(kwargs["debug"])
-            kwargs["control"].stop()
-            return []
-
-        run_once.side_effect = fake_run_once
-
-        with mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar), \
-             mock.patch("cishen_clicker.gui.ttk.Frame"), \
-             mock.patch("cishen_clicker.gui.ttk.LabelFrame"), \
-             mock.patch("cishen_clicker.gui.ttk.Label"), \
-             mock.patch("cishen_clicker.gui.ttk.Entry"), \
-             mock.patch("cishen_clicker.gui.ttk.Button"), \
-             mock.patch("cishen_clicker.gui.ScrolledText"):
-            gui = MiningGui(DummyRoot())
-
-        gui._worker_loop("config.json", control)
-
+        self.assertEqual(module_spec.raw_config, {"window_title": "game"})
+        self.assertEqual(module_spec.config_dir, Path("D:/fake"))
+        self.assertEqual(len(module_spec.run_calls), 1)
+        _runtime, kwargs = module_spec.run_calls[0]
+        self.assertTrue(kwargs["live"])
+        self.assertFalse(kwargs["debug"])
+        self.assertIs(kwargs["control"], control)
         self.assertTrue(control.should_stop())
 
-    @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
-    @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
-        "click_delay_seconds": 0.03,
-        "loop_interval_seconds": 0.3,
-        "max_targets_per_round": 8,
-    })
-    @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
-        "click_delay_seconds": "0.03",
-        "loop_interval_seconds": "0.3",
-        "max_targets_per_round": "8",
-    })
-    @mock.patch("cishen_clicker.gui.load_config")
-    @mock.patch("cishen_clicker.gui.load_templates", return_value=[])
-    @mock.patch("cishen_clicker.gui.MiningStrategy", return_value=object())
-    @mock.patch("cishen_clicker.gui.run_once")
-    def test_worker_loop_stops_when_run_once_reports_login_conflict(
-        self,
-        run_once,
-        _strategy,
-        _load_templates,
-        _load_config,
-        _extract_gui_values,
-        _load_raw_config,
-        _install_hotkeys,
-    ):
-        control = ControlState()
-        control.start()
+    def test_start_does_not_resume_worker_that_is_already_stopping(self):
+        gui = MiningGui.__new__(MiningGui)
+        gui.worker = FakeAliveWorker()
+        gui.control = FakeStoppedControl()
+        gui.status_var = FakeStatusVar()
+        logs = []
+        gui._log = logs.append
+        gui._save_form = mock.Mock(return_value=Path("D:/fake/config.json"))
 
-        class Config:
-            window_title = "game"
-            templates_dir = "templates"
-            loop_interval_seconds = 0
-            tool_interval_loops = 4
-            debug_dir = None
+        gui._start()
 
-        _load_config.return_value = Config()
-
-        def fake_run_once(*args, **kwargs):
-            kwargs["control"].stop()
-            return []
-
-        run_once.side_effect = fake_run_once
-
-        with mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar), \
-             mock.patch("cishen_clicker.gui.ttk.Frame"), \
-             mock.patch("cishen_clicker.gui.ttk.LabelFrame"), \
-             mock.patch("cishen_clicker.gui.ttk.Label"), \
-             mock.patch("cishen_clicker.gui.ttk.Entry"), \
-             mock.patch("cishen_clicker.gui.ttk.Button"), \
-             mock.patch("cishen_clicker.gui.ScrolledText"):
-            gui = MiningGui(DummyRoot())
-
-        gui._worker_loop("config.json", control)
-
-        self.assertTrue(control.should_stop())
+        self.assertEqual(gui.control.start_calls, 0)
+        self.assertFalse(gui._save_form.called)
+        self.assertIn("正在结束旧任务，请稍后再开始", logs)
 
 
 if __name__ == "__main__":

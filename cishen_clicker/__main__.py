@@ -6,15 +6,37 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import load_config
-from .control import ControlState, Hotkeys, install_hotkeys
+from .control import ControlState
 from .model import scale_grid_to_window, to_screen_point
+from .modules import get_module_spec
 from .strategy import MiningStrategy
 from .tool_usage import ToolUsageState, tool_button_point, tool_drop_point
 from .vision import analyze_grid, annotate_candidates, detect_login_conflict_dialog, load_templates
 from .windows import capture_window, click_window_point, locate_window
+from .workspace_config import load_workspace_config
 
 
 TOOL_POST_CLICK_COUNT = 5
+
+
+def _runtime_loop_interval(runtime) -> float:
+    config = getattr(runtime, "config", None)
+    if config is not None:
+        return float(getattr(config, "loop_interval_seconds", 0.5))
+    if isinstance(runtime, dict):
+        raw_config = runtime.get("raw_config", {})
+        return float(raw_config.get("loop_interval_seconds", 0.5))
+    return 0.5
+
+
+def _runtime_debug_dir(runtime) -> Path:
+    config = getattr(runtime, "config", None)
+    if config is not None:
+        return Path(getattr(config, "debug_dir", "debug"))
+    if isinstance(runtime, dict):
+        raw_config = runtime.get("raw_config", {})
+        return Path(str(raw_config.get("debug_dir", "debug")))
+    return Path("debug")
 
 
 def main() -> int:
@@ -23,36 +45,33 @@ def main() -> int:
     parser.add_argument("--live", action="store_true", help="Actually click. Default is dry-run.")
     parser.add_argument("--once", action="store_true", help="Run one screenshot/decision cycle and exit.")
     parser.add_argument("--debug", action="store_true", help="Save annotated screenshots.")
-    parser.add_argument("--no-hotkeys", action="store_true", help="Disable F8/F9/F10 live controls.")
     args = parser.parse_args()
 
-    config = load_config(Path(args.config))
-    templates = load_templates(config.templates_dir)
+    config_path = Path(args.config)
+    workspace_config = load_workspace_config(config_path)
+    module_spec = get_module_spec(workspace_config.active_module)
+    module_config = workspace_config.modules[workspace_config.active_module]
+    runtime = module_spec.create_runtime(module_config, config_path.parent)
     if args.debug:
-        config.debug_dir.mkdir(parents=True, exist_ok=True)
+        _runtime_debug_dir(runtime).mkdir(parents=True, exist_ok=True)
 
-    print(f"window_title={config.window_title!r} live={args.live} templates={len(templates)}")
-    control = _setup_control(args.live, args.once, args.no_hotkeys)
-    strategy = MiningStrategy()
-    tool_state = ToolUsageState(interval_loops=config.tool_interval_loops)
+    print(f"module={module_spec.label} live={args.live}")
+    control = _setup_control(args.live, args.once)
 
     while True:
         if control and not control.wait_until_running():
             return 0
-        targets = run_once(
-            config,
-            templates,
+        targets = module_spec.run_cycle(
+            runtime,
             live=args.live,
             debug=args.debug,
             control=control,
-            strategy=strategy,
-            tool_state=tool_state,
         )
         if args.once:
             return 0 if targets else 2
         if control and control.should_stop():
             return 0
-        time.sleep(config.loop_interval_seconds)
+        time.sleep(_runtime_loop_interval(runtime))
 
 
 def run_once(
@@ -189,17 +208,11 @@ def _click_target_multiple_times(window, target, config, control: ControlState |
         time.sleep(config.click_delay_seconds)
 
 
-def _setup_control(live: bool, once: bool, no_hotkeys: bool) -> ControlState | None:
+def _setup_control(live: bool, once: bool) -> ControlState | None:
     if once or not live:
         return None
     state = ControlState()
-    if no_hotkeys:
-        state.start()
-        return state
-
-    install_hotkeys(state, Hotkeys())
-    print("hotkeys: F8=start/resume F9=pause F10=stop")
-    print("waiting: press F8 to start")
+    state.start()
     return state
 
 

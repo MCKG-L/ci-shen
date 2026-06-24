@@ -1,6 +1,6 @@
 import unittest
 
-from cishen_clicker.gui_config import CONFIG_FIELDS, apply_gui_values, extract_gui_values
+from cishen_clicker.gui_config import ConfigField, CONFIG_FIELDS, apply_gui_values, extract_gui_values
 
 
 class GuiConfigTests(unittest.TestCase):
@@ -12,6 +12,8 @@ class GuiConfigTests(unittest.TestCase):
                 "click_hold_seconds",
                 "loop_interval_seconds",
                 "max_targets_per_round",
+                "max_runtime_minutes",
+                "max_pickaxe_clicks",
                 "tool_interval_loops",
                 "use_drill",
                 "use_bomb",
@@ -24,6 +26,8 @@ class GuiConfigTests(unittest.TestCase):
             "click_hold_seconds": 0.08,
             "loop_interval_seconds": 0.3,
             "max_targets_per_round": 8,
+            "max_runtime_minutes": 30,
+            "max_pickaxe_clicks": 500,
             "tool_interval_loops": 3,
             "use_drill": True,
             "use_bomb": False,
@@ -42,11 +46,30 @@ class GuiConfigTests(unittest.TestCase):
                 "click_hold_seconds": "0.08",
                 "loop_interval_seconds": "0.3",
                 "max_targets_per_round": "8",
+                "max_runtime_minutes": "30",
+                "max_pickaxe_clicks": "500",
                 "tool_interval_loops": "3",
                 "use_drill": "true",
                 "use_bomb": "false",
             },
         )
+
+    def test_extract_gui_values_uses_unlimited_defaults_for_missing_limits(self):
+        values = extract_gui_values(
+            {
+                "click_delay_seconds": 0.03,
+                "click_hold_seconds": 0.08,
+                "loop_interval_seconds": 0.3,
+                "max_targets_per_round": 8,
+                "tool_interval_loops": 3,
+                "use_drill": True,
+                "use_bomb": False,
+            },
+        )
+
+        self.assertEqual(values["max_runtime_minutes"], "-1")
+        self.assertEqual(values["max_pickaxe_clicks"], "-1")
+
 
     def test_apply_gui_values_updates_key_parameters(self):
         raw = {
@@ -54,6 +77,8 @@ class GuiConfigTests(unittest.TestCase):
             "click_hold_seconds": 0.08,
             "loop_interval_seconds": 0.5,
             "max_targets_per_round": 5,
+            "max_runtime_minutes": 10,
+            "max_pickaxe_clicks": 100,
             "tool_interval_loops": 4,
             "use_drill": False,
             "use_bomb": False,
@@ -67,6 +92,8 @@ class GuiConfigTests(unittest.TestCase):
                 "click_hold_seconds": "0.09",
                 "loop_interval_seconds": "0.25",
                 "max_targets_per_round": "",
+                "max_runtime_minutes": "",
+                "max_pickaxe_clicks": "250",
                 "tool_interval_loops": "2",
                 "use_drill": "true",
                 "use_bomb": "false",
@@ -77,11 +104,32 @@ class GuiConfigTests(unittest.TestCase):
         self.assertEqual(updated["click_hold_seconds"], 0.09)
         self.assertEqual(updated["loop_interval_seconds"], 0.25)
         self.assertIsNone(updated["max_targets_per_round"])
+        self.assertIsNone(updated["max_runtime_minutes"])
+        self.assertEqual(updated["max_pickaxe_clicks"], 250)
         self.assertEqual(updated["tool_interval_loops"], 2)
         self.assertTrue(updated["use_drill"])
         self.assertFalse(updated["use_bomb"])
         self.assertEqual(updated["thresholds"]["min_score"], 0.7)
         self.assertEqual(raw["click_delay_seconds"], 0.2)
+
+    def test_gui_values_can_use_module_specific_fields(self):
+        fields = (
+            ConfigField("window_title", "窗口标题", str),
+            ConfigField("enabled", "启用", lambda text: text == "true", kind="check"),
+        )
+        raw = {
+            "window_title": "副本",
+            "enabled": False,
+            "ignored": "keep",
+        }
+
+        values = extract_gui_values(raw, fields)
+        updated = apply_gui_values(raw, {"window_title": "新副本", "enabled": "true"}, fields)
+
+        self.assertEqual(values, {"window_title": "副本", "enabled": "false"})
+        self.assertEqual(updated["window_title"], "新副本")
+        self.assertTrue(updated["enabled"])
+        self.assertEqual(updated["ignored"], "keep")
 
 
 if __name__ == "__main__":

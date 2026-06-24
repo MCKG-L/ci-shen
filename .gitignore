@@ -16,6 +16,7 @@ ENV/
 # Build and packaging output
 build/
 dist/
+*.zip
 *.egg-info/
 .eggs/
 
@@ -28,7 +29,6 @@ coverage.xml
 # Runtime/debug output
 debug/
 *.log
-*.zip
 # Local-only config variants
 *.local.json
 config.local.json

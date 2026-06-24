@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest import mock
 
 
 class GuiEntrypointTests(unittest.TestCase):
@@ -16,6 +17,27 @@ class GuiEntrypointTests(unittest.TestCase):
         spec.loader.exec_module(module)
 
         self.assertTrue(hasattr(module, "MiningGui"))
+
+    def test_gui_main_sets_dpi_awareness_before_creating_tk_root(self) -> None:
+        from cishen_clicker import gui
+
+        events = []
+
+        class FakeRoot:
+            def __init__(self):
+                events.append("tk")
+
+            def mainloop(self):
+                events.append("mainloop")
+
+        with mock.patch("cishen_clicker.gui.set_process_dpi_awareness", create=True) as set_dpi, \
+             mock.patch("cishen_clicker.gui.tk.Tk", FakeRoot), \
+             mock.patch("cishen_clicker.gui.MiningGui", side_effect=lambda _root: events.append("gui")):
+            set_dpi.side_effect = lambda: events.append("dpi")
+
+            gui.main()
+
+        self.assertEqual(events[:2], ["dpi", "tk"])
 
 
 if __name__ == "__main__":

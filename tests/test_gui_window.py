@@ -4,11 +4,20 @@ from unittest import mock
 import tkinter as tk
 
 from cishen_clicker.gui import MiningGui
-from cishen_clicker.notice import NOTICE_TEXT, NOTICE_TITLE
+from cishen_clicker.notice import (
+    MODULE_SWITCH_TEXT,
+    NOTICE_TEXT,
+    NOTICE_TITLE,
+    USAGE_TEXT,
+    USAGE_TITLE,
+)
+from cishen_clicker.workspace_config import WorkspaceConfig
 
 
 created_labels = []
 created_label_frames = []
+created_buttons = []
+created_checkbuttons = []
 
 
 class FakeEntry:
@@ -24,9 +33,24 @@ class FakeEntry:
 
 class FakeCheckbutton:
     def __init__(self, *args, **kwargs):
-        pass
+        self.parent = args[0] if args else None
+        self.text = kwargs.get("text", "")
+        self.grid_calls = []
+        created_checkbuttons.append(self)
 
     def grid(self, *args, **kwargs):
+        self.grid_calls.append((args, kwargs))
+        return None
+
+
+class FakeCombobox:
+    def __init__(self, *args, **kwargs):
+        self.values = kwargs.get("values", ())
+
+    def pack(self, *args, **kwargs):
+        return None
+
+    def bind(self, *args, **kwargs):
         return None
 
 
@@ -43,18 +67,33 @@ class FakeLabel:
 
 
 class FakeButton(FakeLabel):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.command = kwargs.get("command")
+        created_buttons.append(self)
 
 
 class FakeFrame:
     def __init__(self, *args, **kwargs):
+        self.parent = args[0] if args else None
         self.configured = []
+        self.grid_calls = []
 
     def pack(self, *args, **kwargs):
         return None
 
     def columnconfigure(self, *args, **kwargs):
         self.configured.append((args, kwargs))
+
+    def grid(self, *args, **kwargs):
+        self.grid_calls.append((args, kwargs))
+        return None
+
+    def winfo_children(self):
+        return []
+
+    def destroy(self):
+        return None
 
 
 class FakeLabelFrame(FakeFrame):
@@ -123,100 +162,317 @@ class FakeTk:
         self.protocol_calls.append((name, callback))
 
 
+class FakeWorker:
+    def __init__(self):
+        self.join_calls = []
+        self.alive = True
+
+    def is_alive(self):
+        return self.alive
+
+    def join(self, timeout=None):
+        self.join_calls.append(timeout)
+        self.alive = False
+
+
+class FakeControl:
+    def __init__(self):
+        self.stop_calls = 0
+
+    def stop(self):
+        self.stop_calls += 1
+
+    def is_running(self):
+        return False
+
+
+class FakeActiveWorker(FakeWorker):
+    pass
+
+
 class MiningGuiWindowTests(unittest.TestCase):
     def setUp(self):
         created_labels.clear()
         created_label_frames.clear()
+        created_buttons.clear()
+        created_checkbuttons.clear()
 
     @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
     @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
     @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
     @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
     @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
     @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
     @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
-    @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
-        "click_delay_seconds": 0.03,
-        "click_hold_seconds": 0.08,
-        "loop_interval_seconds": 0.3,
-        "max_targets_per_round": 8,
-        "tool_interval_loops": 3,
-        "use_drill": True,
-        "use_bomb": False,
-    })
-    @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
-        "click_delay_seconds": "0.03",
-        "click_hold_seconds": "0.08",
-        "loop_interval_seconds": "0.3",
-        "max_targets_per_round": "8",
-        "tool_interval_loops": "3",
-        "use_drill": "true",
-        "use_bomb": "false",
-    })
-    @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={
+            "mining": {
+                "click_delay_seconds": 0.03,
+                "click_hold_seconds": 0.08,
+                "loop_interval_seconds": 0.3,
+                "max_targets_per_round": 8,
+                "max_runtime_minutes": 30,
+                "max_pickaxe_clicks": 500,
+                "tool_interval_loops": 3,
+                "use_drill": True,
+                "use_bomb": False,
+            },
+            "dungeon": {"window_title": "副本"},
+        },
+    ))
     @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
-    def test_window_is_fixed_size_and_uses_three_fields(
+    def test_window_opens_home_page_with_module_buttons(
         self,
-        _install_hotkeys,
-        _extract_gui_values,
-        _load_raw_config,
+        _load_workspace_config,
     ):
         root = FakeTk()
 
         gui = MiningGui(root)
 
-        self.assertEqual(root.geometry_calls, ["760x620"])
+        self.assertEqual(root.geometry_calls, ["760x700"])
         self.assertEqual(root.resizable_calls, [(False, False)])
-        self.assertEqual(root.minsize_calls, [(760, 620)])
-        self.assertEqual(root.maxsize_calls, [(760, 620)])
-        self.assertEqual(list(gui.field_vars.keys()), [
-            "click_delay_seconds",
-            "click_hold_seconds",
-            "loop_interval_seconds",
-            "max_targets_per_round",
-            "tool_interval_loops",
-            "use_drill",
-            "use_bomb",
-        ])
+        self.assertEqual(root.minsize_calls, [(760, 700)])
+        self.assertEqual(root.maxsize_calls, [(760, 700)])
+        self.assertEqual(gui.current_page, "home")
+        self.assertEqual(gui.module_var.get(), "mining")
+        self.assertEqual(gui.module_options, ["mining", "dungeon", "summon", "garden"])
+        self.assertEqual(gui.field_vars, {})
+        button_texts = [button.text for button in created_buttons]
+        self.assertIn("挖矿", button_texts)
+        self.assertIn("副本", button_texts)
+        self.assertIn("召唤", button_texts)
+        self.assertIn("菜园管理", button_texts)
 
     @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
     @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
     @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
     @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
     @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
     @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
     @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
-    @mock.patch("cishen_clicker.gui.load_raw_config", return_value={
-        "click_delay_seconds": 0.03,
-        "click_hold_seconds": 0.08,
-        "loop_interval_seconds": 0.3,
-        "max_targets_per_round": 8,
-        "tool_interval_loops": 3,
-        "use_drill": True,
-        "use_bomb": False,
-    })
-    @mock.patch("cishen_clicker.gui.extract_gui_values", return_value={
-        "click_delay_seconds": "0.03",
-        "click_hold_seconds": "0.08",
-        "loop_interval_seconds": "0.3",
-        "max_targets_per_round": "8",
-        "tool_interval_loops": "3",
-        "use_drill": "true",
-        "use_bomb": "false",
-    })
-    @mock.patch("cishen_clicker.gui.install_gui_hotkeys")
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={
+            "mining": {
+                "click_delay_seconds": 0.03,
+                "click_hold_seconds": 0.08,
+                "loop_interval_seconds": 0.3,
+                "max_targets_per_round": 8,
+                "max_runtime_minutes": 30,
+                "max_pickaxe_clicks": 500,
+                "tool_interval_loops": 3,
+                "use_drill": True,
+                "use_bomb": False,
+            },
+            "dungeon": {"window_title": "副本"},
+        },
+    ))
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
+    def test_open_mining_module_page_uses_mining_fields_and_return_button(
+        self,
+        _load_workspace_config,
+    ):
+        gui = MiningGui(FakeTk())
+
+        gui._open_module("mining")
+
+        self.assertEqual(gui.current_page, "module")
+        self.assertEqual(gui.module_var.get(), "mining")
+        self.assertEqual(list(gui.field_vars.keys()), [
+            "click_delay_seconds",
+            "click_hold_seconds",
+            "loop_interval_seconds",
+            "max_targets_per_round",
+            "max_runtime_minutes",
+            "max_pickaxe_clicks",
+            "tool_interval_loops",
+            "use_drill",
+            "use_bomb",
+        ])
+        self.assertIn("返回首页", [button.text for button in created_buttons])
+        self.assertIn(MODULE_SWITCH_TEXT, [label.text for label in created_labels])
+
+        gui._show_home_page()
+
+        self.assertEqual(gui.current_page, "home")
+        self.assertEqual(gui.field_vars, {})
+
+    @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
+    @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
+    @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
+    @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
+    @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
+    @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
+    @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={
+            "mining": {
+                "click_delay_seconds": 0.03,
+                "click_hold_seconds": 0.08,
+                "loop_interval_seconds": 0.3,
+                "max_targets_per_round": 8,
+                "max_runtime_minutes": 30,
+                "max_pickaxe_clicks": 500,
+                "tool_interval_loops": 3,
+                "use_drill": True,
+                "use_bomb": False,
+            },
+            "dungeon": {"window_title": "副本"},
+        },
+    ))
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
+    def test_tool_checkboxes_share_one_grid_cell_with_left_alignment_and_gap(
+        self,
+        _load_workspace_config,
+    ):
+        gui = MiningGui(FakeTk())
+
+        gui._open_module("mining")
+
+        checkbuttons = {checkbutton.text: checkbutton for checkbutton in created_checkbuttons}
+        drill = checkbuttons["使用钻头"]
+        bomb = checkbuttons["使用炸药"]
+        tool_frame = drill.parent
+        self.assertIs(tool_frame, bomb.parent)
+        self.assertIsNot(tool_frame, gui.params_frame)
+        self.assertEqual(tool_frame.grid_calls[0][1]["column"], 2)
+        self.assertEqual(tool_frame.grid_calls[0][1]["columnspan"], 2)
+        self.assertEqual(tool_frame.configured, [])
+        self.assertEqual(drill.grid_calls[0][1]["column"], 0)
+        self.assertEqual(drill.grid_calls[0][1]["sticky"], tk.W)
+        self.assertEqual(bomb.grid_calls[0][1]["column"], 1)
+        self.assertEqual(bomb.grid_calls[0][1]["sticky"], tk.W)
+        self.assertEqual(bomb.grid_calls[0][1]["padx"], (24, 0))
+
+    @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
+    @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
+    @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
+    @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
+    @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
+    @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
+    @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={"mining": {}, "dungeon": {}, "summon": {}, "garden": {}},
+    ))
     @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
     def test_window_shows_free_learning_only_notice(
         self,
-        _install_hotkeys,
-        _extract_gui_values,
-        _load_raw_config,
+        _load_workspace_config,
     ):
         MiningGui(FakeTk())
 
         self.assertIn(NOTICE_TITLE, [frame.text for frame in created_label_frames])
         self.assertIn(NOTICE_TEXT, [label.text for label in created_labels])
 
+    @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
+    @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
+    @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
+    @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
+    @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
+    @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
+    @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={"mining": {}, "dungeon": {}, "summon": {}, "garden": {}},
+    ))
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
+    def test_home_page_shows_usage_box_below_notice(
+        self,
+        _load_workspace_config,
+    ):
+        MiningGui(FakeTk())
+
+        self.assertIn(USAGE_TITLE, [frame.text for frame in created_label_frames])
+        self.assertIn(USAGE_TEXT, [label.text for label in created_labels])
+
+    @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
+    @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
+    @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
+    @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
+    @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
+    @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
+    @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={
+            "mining": {"click_delay_seconds": 0.03},
+            "dungeon": {},
+            "summon": {},
+            "garden": {},
+        },
+    ))
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
+    def test_switching_modules_stops_paused_worker_before_opening_new_module(
+        self,
+        _load_workspace_config,
+    ):
+        gui = MiningGui(FakeTk())
+        gui.current_page = "module"
+        gui.workspace_config = WorkspaceConfig(
+            active_module="mining",
+            modules={
+                "mining": {"click_delay_seconds": 0.03},
+                "dungeon": {},
+                "summon": {},
+                "garden": {},
+            },
+        )
+        gui.module_var = FakeStringVar("mining")
+        gui.field_vars = {"click_delay_seconds": FakeStringVar("0.05")}
+        control = FakeControl()
+        worker = FakeWorker()
+        gui.control = control
+        gui.worker = worker
+
+        gui._open_module("dungeon")
+
+        self.assertEqual(control.stop_calls, 1)
+        self.assertEqual(worker.join_calls, [1.0])
+        self.assertIsNone(gui.control)
+        self.assertIsNone(gui.worker)
+        self.assertEqual(gui.current_page, "module")
+        self.assertEqual(gui.module_var.get(), "dungeon")
+
+    def test_sync_current_fields_preserves_inactive_module_data(self):
+        gui = MiningGui.__new__(MiningGui)
+        gui.module_var = FakeStringVar("mining")
+        gui.field_vars = {
+            "click_delay_seconds": FakeStringVar("0.05"),
+            "click_hold_seconds": FakeStringVar("0.08"),
+            "loop_interval_seconds": FakeStringVar("0.3"),
+            "max_targets_per_round": FakeStringVar("8"),
+            "max_runtime_minutes": FakeStringVar(""),
+            "max_pickaxe_clicks": FakeStringVar(""),
+            "tool_interval_loops": FakeStringVar("4"),
+            "use_drill": FakeStringVar("false"),
+            "use_bomb": FakeStringVar("false"),
+        }
+        gui.workspace_config = WorkspaceConfig(
+            active_module="mining",
+            modules={
+                "mining": {"click_delay_seconds": 0.03},
+                "dungeon": {"window_title": "副本", "loop_interval_seconds": 0.5},
+                "summon": {"window_title": "召唤"},
+                "garden": {"window_title": "菜园"},
+            },
+        )
+
+        gui._sync_current_fields_to_workspace()
+
+        self.assertEqual(gui.workspace_config.modules["mining"]["click_delay_seconds"], 0.05)
+        self.assertEqual(gui.workspace_config.modules["dungeon"]["window_title"], "副本")
+        self.assertEqual(gui.workspace_config.modules["dungeon"]["loop_interval_seconds"], 0.5)
+        self.assertEqual(gui.workspace_config.modules["summon"]["window_title"], "召唤")
+        self.assertEqual(gui.workspace_config.modules["garden"]["window_title"], "菜园")
 
 if __name__ == "__main__":
     unittest.main()

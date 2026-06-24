@@ -91,7 +91,7 @@ def make_lparam(x: int, y: int) -> int:
     return (y & 0xFFFF) << 16 | (x & 0xFFFF)
 
 
-def _set_process_dpi_awareness() -> None:
+def set_process_dpi_awareness() -> None:
     try:
         ctypes.windll.user32.SetProcessDpiAwarenessContext(wintypes.HANDLE(-4))
         return
@@ -108,6 +108,10 @@ def _set_process_dpi_awareness() -> None:
         ctypes.windll.user32.SetProcessDPIAware()
     except Exception:
         pass
+
+
+def _set_process_dpi_awareness() -> None:
+    set_process_dpi_awareness()
 
 
 def _find_visible_windows(title_keyword: str, user32) -> list[int]:

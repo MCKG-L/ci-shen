@@ -16,6 +16,12 @@ def _parse_optional_int(text: str) -> int | None:
     return int(text)
 
 
+def _parse_optional_float(text: str) -> float | None:
+    if text == "":
+        return None
+    return float(text)
+
+
 def _parse_bool(text: str) -> bool:
     value = text.strip().lower()
     if value in {"1", "true", "yes", "y", "on"}:
@@ -31,6 +37,7 @@ class ConfigField:
     label: str
     parser: Parser
     kind: str = "entry"
+    default_text: str | None = None
 
 
 CONFIG_FIELDS: tuple[ConfigField, ...] = (
@@ -38,6 +45,8 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("click_hold_seconds", "按下保持（秒）", float),
     ConfigField("loop_interval_seconds", "循环间隔（秒）", float),
     ConfigField("max_targets_per_round", "每轮最多目标数", _parse_optional_int),
+    ConfigField("max_runtime_minutes", "最大运行时间（分钟）", _parse_optional_float, default_text="-1"),
+    ConfigField("max_pickaxe_clicks", "最大镐头消耗", _parse_optional_int, default_text="-1"),
     ConfigField("tool_interval_loops", "道具间隔循环数", int),
     ConfigField("use_drill", "使用钻头", _parse_bool, kind="check"),
     ConfigField("use_bomb", "使用炸药", _parse_bool, kind="check"),
@@ -52,10 +61,13 @@ def save_raw_config(path: Path, raw: dict[str, Any]) -> None:
     path.write_text(json.dumps(raw, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def extract_gui_values(raw: dict[str, Any]) -> dict[str, str]:
+def extract_gui_values(raw: dict[str, Any], fields: tuple[ConfigField, ...] = CONFIG_FIELDS) -> dict[str, str]:
     values = {}
-    for field in CONFIG_FIELDS:
+    for field in fields:
         value = _get_nested(raw, field.key)
+        if value is None and field.default_text is not None:
+            values[field.key] = field.default_text
+            continue
         if field.kind == "check":
             values[field.key] = "true" if bool(value) else "false"
         else:
@@ -63,9 +75,13 @@ def extract_gui_values(raw: dict[str, Any]) -> dict[str, str]:
     return values
 
 
-def apply_gui_values(raw: dict[str, Any], values: dict[str, str]) -> dict[str, Any]:
+def apply_gui_values(
+    raw: dict[str, Any],
+    values: dict[str, str],
+    fields: tuple[ConfigField, ...] = CONFIG_FIELDS,
+) -> dict[str, Any]:
     updated = copy.deepcopy(raw)
-    fields_by_key = {field.key: field for field in CONFIG_FIELDS}
+    fields_by_key = {field.key: field for field in fields}
     for key, text in values.items():
         field = fields_by_key[key]
         try:
@@ -73,6 +89,8 @@ def apply_gui_values(raw: dict[str, Any], values: dict[str, str]) -> dict[str, A
         except ValueError as exc:
             raise ValueError(f"{field.label}: invalid value {text!r}") from exc
         _set_nested(updated, key, parsed)
+        if key == "max_runtime_minutes":
+            updated.pop("max_runtime_seconds", None)
     return updated
 
 

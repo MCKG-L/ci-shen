@@ -1,49 +1,68 @@
 {
-  "window_title": "次神：光之觉醒",
-  "base_window": {
-    "width": 671,
-    "height": 1248
-  },
-  "mine_area": {
-    "x": 87,
-    "y": 372,
-    "width": 501,
-    "height": 589
-  },
-  "rows": 7,
-  "cols": 6,
-  "active_start_row": 0,
-  "excluded_cells": [
-    {
-      "row": 5,
-      "col": 0
+  "active_module": "dungeon",
+  "modules": {
+    "mining": {
+      "window_title": "次神：光之觉醒",
+      "base_window": {
+        "width": 671,
+        "height": 1248
+      },
+      "mine_area": {
+        "x": 87,
+        "y": 372,
+        "width": 501,
+        "height": 589
+      },
+      "rows": 7,
+      "cols": 6,
+      "active_start_row": 0,
+      "excluded_cells": [
+        {
+          "row": 5,
+          "col": 0
+        }
+      ],
+      "templates_dir": "templates",
+      "debug_dir": "debug",
+      "loop_interval_seconds": 0.3,
+      "click_delay_seconds": 0.12,
+      "click_hold_seconds": 0.06,
+      "max_targets_per_round": 8,
+      "max_runtime_minutes": -1.0,
+      "max_pickaxe_clicks": -1,
+      "use_drill": false,
+      "use_bomb": false,
+      "tool_interval_loops": 4,
+      "drill_button_ratio": {
+        "x": 0.28,
+        "y": 0.84
+      },
+      "bomb_button_ratio": {
+        "x": 0.74,
+        "y": 0.84
+      },
+      "thresholds": {
+        "min_score": 0.65,
+        "min_brightness": 62,
+        "min_saturation": 28,
+        "min_content_score": 0.18,
+        "template_threshold": 0.72,
+        "min_reachable_brightness": 75.0,
+        "min_reachable_bright_pixel_ratio": 0.5,
+        "min_mineral_color_ratio": 0.035
+      }
+    },
+    "dungeon": {
+      "window_title": "次神：光之觉醒",
+      "loop_interval_seconds": 0.5
+    },
+    "summon": {
+      "window_title": "次神：光之觉醒",
+      "loop_interval_seconds": 0.5
+    },
+    "garden": {
+      "window_title": "次神：光之觉醒",
+      "loop_interval_seconds": 0.5
     }
-  ],
-  "templates_dir": "templates",
-  "debug_dir": "debug",
-  "loop_interval_seconds": 0.3,
-  "click_delay_seconds": 0.12,
-  "click_hold_seconds": 0.08,
-  "max_targets_per_round": 8,
-  "use_drill": false,
-  "use_bomb": false,
-  "tool_interval_loops": 4,
-  "drill_button_ratio": {
-    "x": 0.28,
-    "y": 0.84
-  },
-  "bomb_button_ratio": {
-    "x": 0.74,
-    "y": 0.84
-  },
-  "thresholds": {
-    "min_score": 0.65,
-    "min_brightness": 62,
-    "min_saturation": 28,
-    "min_content_score": 0.18,
-    "template_threshold": 0.72,
-    "min_reachable_brightness": 75.0,
-    "min_reachable_bright_pixel_ratio": 0.5,
-    "min_mineral_color_ratio": 0.035
   }
 }

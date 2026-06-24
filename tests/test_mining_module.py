@@ -46,6 +46,7 @@ class MiningModuleTests(unittest.TestCase):
         self.assertIsInstance(runtime.strategy, MiningStrategy)
         self.assertIsInstance(runtime.tool_state, ToolUsageState)
         self.assertEqual(runtime.limit_state.pickaxe_clicks, 0)
+        self.assertEqual(runtime.treasure_state.confirmed_count, 0)
         self.assertEqual(runtime.templates, [])
 
     def test_create_runtime_treats_negative_limits_as_unlimited(self):
@@ -89,6 +90,7 @@ class MiningModuleTests(unittest.TestCase):
             strategy=MiningStrategy(),
             tool_state=ToolUsageState(interval_loops=4),
             limit_state=mining.MiningLimitState(clock=clock),
+            treasure_state=mining.TreasureMapState(),
         )
         logs = []
 
@@ -135,6 +137,108 @@ class MiningModuleTests(unittest.TestCase):
         self.assertTrue(control.should_stop())
         self.assertEqual(click_window_point.call_count, 2)
         self.assertTrue(any("达到镐头消耗限制" in log for log in logs))
+
+    @mock.patch("cishen_clicker.modules.mining.analyze_grid")
+    @mock.patch("cishen_clicker.modules.mining.click_window_point")
+    @mock.patch("cishen_clicker.modules.mining.detect_treasure_map_dialog", return_value=(300, 955))
+    @mock.patch("cishen_clicker.modules.mining.capture_window")
+    @mock.patch("cishen_clicker.modules.mining.locate_window")
+    def test_run_once_confirms_treasure_map_before_grid_analysis(
+        self,
+        locate_window,
+        capture_window,
+        _detect_treasure_map_dialog,
+        click_window_point,
+        analyze_grid,
+    ):
+        import numpy as np
+
+        window = WindowRect(hwnd=1234, left=100, top=200, width=600, height=1200)
+        locate_window.return_value = window
+        capture_window.return_value = np.zeros((1200, 600, 3), dtype=np.uint8)
+        treasure_state = mining.TreasureMapState()
+        logs = []
+
+        result = mining.run_once(
+            _config(),
+            templates=[],
+            live=True,
+            debug=False,
+            treasure_state=treasure_state,
+            logger=logs.append,
+        )
+
+        self.assertEqual(result, [])
+        click_window_point.assert_called_once_with(window, (400, 1155), hold_seconds=0.08)
+        self.assertEqual(treasure_state.confirmed_count, 1)
+        self.assertFalse(analyze_grid.called)
+        self.assertTrue(any("藏宝图" in log for log in logs))
+
+    @mock.patch("cishen_clicker.modules.mining.analyze_grid")
+    @mock.patch("cishen_clicker.modules.mining.click_window_point")
+    @mock.patch("cishen_clicker.modules.mining.detect_treasure_map_dialog", return_value=(300, 955))
+    @mock.patch("cishen_clicker.modules.mining.capture_window")
+    @mock.patch("cishen_clicker.modules.mining.locate_window")
+    def test_run_once_confirms_treasure_map_even_after_three_previous_detections(
+        self,
+        locate_window,
+        capture_window,
+        _detect_treasure_map_dialog,
+        click_window_point,
+        analyze_grid,
+    ):
+        import numpy as np
+
+        locate_window.return_value = WindowRect(hwnd=1234, left=100, top=200, width=600, height=1200)
+        capture_window.return_value = np.zeros((1200, 600, 3), dtype=np.uint8)
+        treasure_state = mining.TreasureMapState(confirmed_count=3)
+        logs = []
+
+        result = mining.run_once(
+            _config(),
+            templates=[],
+            live=True,
+            debug=False,
+            treasure_state=treasure_state,
+            logger=logs.append,
+        )
+
+        self.assertEqual(result, [])
+        click_window_point.assert_called_once()
+        self.assertFalse(analyze_grid.called)
+        self.assertGreater(treasure_state.confirmed_count, 3)
+        self.assertTrue(any("准备第 4 次点击确定" in log for log in logs))
+
+    @mock.patch("cishen_clicker.modules.mining._save_debug_image")
+    @mock.patch("cishen_clicker.modules.mining.analyze_grid")
+    @mock.patch("cishen_clicker.modules.mining.detect_treasure_map_dialog", return_value=(300, 955))
+    @mock.patch("cishen_clicker.modules.mining.capture_window")
+    @mock.patch("cishen_clicker.modules.mining.locate_window")
+    def test_run_once_saves_debug_image_when_treasure_map_short_circuits_analysis(
+        self,
+        locate_window,
+        capture_window,
+        _detect_treasure_map_dialog,
+        analyze_grid,
+        save_debug_image,
+    ):
+        import numpy as np
+
+        image = np.zeros((1200, 600, 3), dtype=np.uint8)
+        config = _config()
+        locate_window.return_value = WindowRect(hwnd=1234, left=100, top=200, width=600, height=1200)
+        capture_window.return_value = image
+
+        result = mining.run_once(
+            config,
+            templates=[],
+            live=False,
+            debug=True,
+        )
+
+        self.assertEqual(result, [])
+        self.assertFalse(analyze_grid.called)
+        save_debug_image.assert_called_once_with(config, image, [])
 
 
 def _config(

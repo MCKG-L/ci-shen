@@ -6,6 +6,13 @@ from .config import Thresholds
 from .model import Candidate, Cell, GridConfig, Rect, iter_grid_cells
 
 
+DIALOG_DEBUG_COLORS = {
+    "login-dialog": (255, 160, 0),
+    "login-button": (0, 210, 255),
+    "treasure-button": (255, 0, 255),
+}
+
+
 def load_templates(templates_dir: Path) -> list:
     cv2, _np = _cv()
     templates = []
@@ -82,6 +89,117 @@ def detect_login_conflict_dialog(image) -> bool:
     green_ratio = float(np.count_nonzero(green_mask) / green_mask.size)
 
     return white_ratio >= 0.42 and green_ratio >= 0.035
+
+
+def dialog_detection_regions(image) -> list[tuple[str, Rect]]:
+    if image.size == 0:
+        return []
+
+    height, width = image.shape[:2]
+    if height <= 0 or width <= 0:
+        return []
+
+    return [
+        (
+            "login-dialog",
+            Rect(
+                x=round(width * 0.08),
+                y=round(height * 0.30),
+                width=round(width * 0.92) - round(width * 0.08),
+                height=round(height * 0.72) - round(height * 0.30),
+            ),
+        ),
+        (
+            "login-button",
+            Rect(
+                x=round(width * 0.16),
+                y=round(height * 0.48),
+                width=round(width * 0.84) - round(width * 0.16),
+                height=round(height * 0.68) - round(height * 0.48),
+            ),
+        ),
+        (
+            "treasure-button",
+            Rect(
+                x=round(width * 0.25),
+                y=round(height * 0.72),
+                width=round(width * 0.75) - round(width * 0.25),
+                height=round(height * 0.86) - round(height * 0.72),
+            ),
+        ),
+    ]
+
+
+def annotate_dialog_detection_regions(image):
+    cv2, _np = _cv()
+    annotated = image.copy()
+    for label, rect in dialog_detection_regions(image):
+        color = DIALOG_DEBUG_COLORS.get(label, (255, 255, 255))
+        p1 = (round(rect.x), round(rect.y))
+        p2 = (round(rect.x + rect.width), round(rect.y + rect.height))
+        cv2.rectangle(annotated, p1, p2, color, 2)
+        cv2.putText(
+            annotated,
+            label,
+            (p1[0] + 3, max(16, p1[1] - 6)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            color,
+            1,
+            cv2.LINE_AA,
+        )
+    return annotated
+
+
+def detect_treasure_map_dialog(image) -> tuple[int, int] | None:
+    cv2, np = _cv()
+    if image.size == 0:
+        return None
+
+    height, width = image.shape[:2]
+    if height < 300 or width < 200:
+        return None
+
+    x1 = round(width * 0.25)
+    x2 = round(width * 0.75)
+    y1 = round(height * 0.72)
+    y2 = round(height * 0.86)
+    lower_center = image[y1:y2, x1:x2]
+    if lower_center.size == 0:
+        return None
+
+    hsv = cv2.cvtColor(lower_center, cv2.COLOR_BGR2HSV)
+    hue = hsv[:, :, 0]
+    saturation = hsv[:, :, 1]
+    value = hsv[:, :, 2]
+    green_mask = (
+        (hue >= 42)
+        & (hue <= 90)
+        & (saturation >= 70)
+        & (value >= 110)
+    ).astype(np.uint8) * 255
+
+    kernel = np.ones((5, 5), dtype=np.uint8)
+    green_mask = cv2.morphologyEx(green_mask, cv2.MORPH_CLOSE, kernel)
+    contours_result = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours_result[0] if len(contours_result) == 2 else contours_result[1]
+    if not contours:
+        return None
+
+    contour = max(contours, key=cv2.contourArea)
+    area = float(cv2.contourArea(contour))
+    button_x, button_y, button_width, button_height = cv2.boundingRect(contour)
+    if (
+        button_width < width * 0.16
+        or button_height < height * 0.035
+        or area < width * height * 0.004
+    ):
+        return None
+
+    return (
+        round(x1 + button_x + button_width / 2),
+        round(y1 + button_y + button_height / 2),
+    )
 
 
 def score_cell(cell_image, thresholds: Thresholds, templates: list) -> tuple[float, str]:

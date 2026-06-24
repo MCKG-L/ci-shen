@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -12,7 +12,14 @@ from ..gui_config import CONFIG_FIELDS
 from ..model import scale_grid_to_window, to_screen_point
 from ..strategy import MiningStrategy
 from ..tool_usage import ToolUsageState, tool_button_point, tool_drop_point
-from ..vision import analyze_grid, annotate_candidates, detect_login_conflict_dialog, load_templates
+from ..vision import (
+    analyze_grid,
+    annotate_candidates,
+    annotate_dialog_detection_regions,
+    detect_login_conflict_dialog,
+    detect_treasure_map_dialog,
+    load_templates,
+)
 from ..windows import capture_window, click_window_point, locate_window
 from .base import ModuleSpec
 
@@ -39,12 +46,33 @@ class MiningLimitState:
 
 
 @dataclass
+class TreasureMapState:
+    confirmed_count: int = 0
+    confirmed_date: date | None = None
+
+    def refresh_for_today(self, today: date | None = None) -> None:
+        today = today or date.today()
+        if self.confirmed_date is None:
+            self.confirmed_date = today
+            return
+        if self.confirmed_date != today:
+            self.confirmed_date = today
+            self.confirmed_count = 0
+
+    def record_confirmed(self, today: date | None = None) -> int:
+        self.refresh_for_today(today)
+        self.confirmed_count += 1
+        return self.confirmed_count
+
+
+@dataclass
 class MiningRuntime:
     config: AppConfig
     templates: list
     strategy: MiningStrategy
     tool_state: ToolUsageState
     limit_state: MiningLimitState
+    treasure_state: TreasureMapState
 
 
 def create_runtime(raw_config: dict[str, Any], config_dir: Path) -> MiningRuntime:
@@ -55,6 +83,7 @@ def create_runtime(raw_config: dict[str, Any], config_dir: Path) -> MiningRuntim
         strategy=MiningStrategy(),
         tool_state=ToolUsageState(interval_loops=config.tool_interval_loops),
         limit_state=MiningLimitState(),
+        treasure_state=TreasureMapState(),
     )
 
 
@@ -77,6 +106,7 @@ def run_cycle(
         strategy=runtime.strategy,
         tool_state=runtime.tool_state,
         limit_state=runtime.limit_state,
+        treasure_state=runtime.treasure_state,
         logger=logger,
     )
 
@@ -90,6 +120,7 @@ def run_once(
     strategy: MiningStrategy | None = None,
     tool_state: ToolUsageState | None = None,
     limit_state: MiningLimitState | None = None,
+    treasure_state: TreasureMapState | None = None,
     logger=print,
 ):
     if _stop_if_limits_reached(config, limit_state, control, logger):
@@ -98,9 +129,26 @@ def run_once(
     window = locate_window(config.window_title)
     image = capture_window(window)
     if detect_login_conflict_dialog(image):
+        if debug:
+            _save_debug_image(config, image, [])
         logger("检测到账户在他处登录提示，已强制结束程序。")
         if control:
             control.stop()
+        return []
+
+    treasure_confirm_point = detect_treasure_map_dialog(image)
+    if treasure_confirm_point is not None:
+        if debug:
+            _save_debug_image(config, image, [])
+        _handle_treasure_map_dialog(
+            window,
+            treasure_confirm_point,
+            config,
+            live,
+            control,
+            treasure_state,
+            logger,
+        )
         return []
 
     grid = _grid_for_image(config, image)
@@ -184,6 +232,30 @@ def _click_targets(
                 return clicked_targets
             time.sleep(config.click_delay_seconds)
     return clicked_targets if live else targets
+
+
+def _handle_treasure_map_dialog(
+    window,
+    confirm_point: tuple[int, int],
+    config,
+    live: bool,
+    control: ControlState | None,
+    treasure_state: TreasureMapState | None,
+    logger=print,
+) -> None:
+    treasure_state = treasure_state or TreasureMapState()
+    next_count = treasure_state.confirmed_count + 1
+    logger(f"检测到藏宝图弹窗：准备第 {next_count} 次点击确定")
+    if not live:
+        return
+    if control and not control.is_running():
+        return
+
+    screen_point = to_screen_point((window.left, window.top), confirm_point)
+    click_window_point(window, screen_point, hold_seconds=config.click_hold_seconds)
+    confirmed_count = treasure_state.record_confirmed()
+    logger(f"已点击藏宝图确定：第 {confirmed_count} 次")
+    time.sleep(config.click_delay_seconds)
 
 
 def _use_enabled_tools(
@@ -337,7 +409,8 @@ def _grid_for_image(config, image):
 
 def _save_debug_image(config, image, candidates) -> None:
     cv2, _np = _cv()
-    annotated = annotate_candidates(image, candidates, config.thresholds.min_score)
+    annotated = annotate_dialog_detection_regions(image)
+    annotated = annotate_candidates(annotated, candidates, config.thresholds.min_score)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     cv2.imwrite(str(config.debug_dir / f"{stamp}-annotated.png"), annotated)
 

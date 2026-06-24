@@ -4,7 +4,14 @@ import numpy as np
 
 from cishen_clicker.config import Thresholds
 from cishen_clicker.model import GridConfig, Rect
-from cishen_clicker.vision import analyze_grid, detect_login_conflict_dialog, score_cell
+from cishen_clicker.vision import (
+    analyze_grid,
+    annotate_dialog_detection_regions,
+    detect_login_conflict_dialog,
+    detect_treasure_map_dialog,
+    dialog_detection_regions,
+    score_cell,
+)
 
 
 class VisionScoringTests(unittest.TestCase):
@@ -20,6 +27,42 @@ class VisionScoringTests(unittest.TestCase):
         image[620:705, 320:500] = (80, 195, 30)
 
         self.assertFalse(detect_login_conflict_dialog(image))
+
+    def test_detect_treasure_map_dialog_returns_confirm_button_center(self):
+        image = np.full((1200, 600, 3), (38, 42, 44), dtype=np.uint8)
+        image[300:1020, 70:530] = (52, 48, 82)
+        image[910:1000, 210:390] = (48, 200, 60)
+
+        confirm_point = detect_treasure_map_dialog(image)
+
+        self.assertIsNotNone(confirm_point)
+        self.assertEqual(confirm_point, (300, 955))
+
+    def test_detect_treasure_map_dialog_rejects_plain_game_screen(self):
+        image = np.full((1200, 600, 3), (48, 58, 56), dtype=np.uint8)
+
+        self.assertIsNone(detect_treasure_map_dialog(image))
+
+    def test_dialog_detection_regions_match_detection_crops(self):
+        image = np.zeros((1200, 600, 3), dtype=np.uint8)
+
+        regions = dict(dialog_detection_regions(image))
+
+        self.assertEqual(regions["login-dialog"].x, 48)
+        self.assertEqual(regions["login-dialog"].y, 360)
+        self.assertEqual(regions["login-button"].x, 96)
+        self.assertEqual(regions["login-button"].y, 576)
+        self.assertEqual(regions["treasure-button"].x, 150)
+        self.assertEqual(regions["treasure-button"].y, 864)
+
+    def test_annotate_dialog_detection_regions_draws_debug_boxes(self):
+        image = np.zeros((1200, 600, 3), dtype=np.uint8)
+
+        annotated = annotate_dialog_detection_regions(image)
+
+        self.assertTrue(np.any(annotated[360, 48] != image[360, 48]))
+        self.assertTrue(np.any(annotated[576, 96] != image[576, 96]))
+        self.assertTrue(np.any(annotated[864, 150] != image[864, 150]))
 
     def test_dark_unreachable_cell_is_rejected_before_mineral_scoring(self):
         image = np.full((80, 80, 3), (42, 55, 34), dtype=np.uint8)

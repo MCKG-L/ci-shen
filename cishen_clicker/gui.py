@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import queue
+import sys
 import threading
 import time
 import traceback
@@ -10,12 +11,29 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
-from .__main__ import run_once
-from .config import load_config
-from .control import ControlState, Hotkeys
-from .gui_config import CONFIG_FIELDS, apply_gui_values, extract_gui_values, load_raw_config, save_raw_config
-from .strategy import MiningStrategy
-from .vision import load_templates
+try:
+    from .__main__ import run_once
+    from .config import load_config
+    from .control import ControlState, Hotkeys
+    from .gui_config import CONFIG_FIELDS, apply_gui_values, extract_gui_values, load_raw_config, save_raw_config
+    from .notice import NOTICE_TEXT, NOTICE_TITLE
+    from .strategy import MiningStrategy
+    from .vision import load_templates
+except ImportError:
+    if __package__ not in {None, ""}:
+        raise
+
+    package_root = Path(__file__).resolve().parents[1]
+    if str(package_root) not in sys.path:
+        sys.path.insert(0, str(package_root))
+
+    from cishen_clicker.__main__ import run_once
+    from cishen_clicker.config import load_config
+    from cishen_clicker.control import ControlState, Hotkeys
+    from cishen_clicker.gui_config import CONFIG_FIELDS, apply_gui_values, extract_gui_values, load_raw_config, save_raw_config
+    from cishen_clicker.notice import NOTICE_TEXT, NOTICE_TITLE
+    from cishen_clicker.strategy import MiningStrategy
+    from cishen_clicker.vision import load_templates
 
 
 class MiningGui:
@@ -45,8 +63,14 @@ class MiningGui:
         outer = ttk.Frame(self.root, padding=12)
         outer.pack(fill=tk.BOTH, expand=True)
 
+        notice_frame = ttk.LabelFrame(outer, text=NOTICE_TITLE)
+        notice_frame.pack(fill=tk.X)
+        ttk.Label(notice_frame, text=NOTICE_TEXT, wraplength=720, justify=tk.LEFT).pack(
+            fill=tk.X, padx=8, pady=6
+        )
+
         config_frame = ttk.LabelFrame(outer, text="配置")
-        config_frame.pack(fill=tk.X)
+        config_frame.pack(fill=tk.X, pady=(10, 0))
         ttk.Entry(config_frame, textvariable=self.config_path_var).pack(
             side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 4), pady=8
         )
@@ -73,9 +97,9 @@ class MiningGui:
 
         controls_frame = ttk.Frame(outer)
         controls_frame.pack(fill=tk.X, pady=(10, 0))
-        ttk.Button(controls_frame, text="开始/继续", command=self._start).pack(side=tk.LEFT)
-        ttk.Button(controls_frame, text="暂停", command=self._pause).pack(side=tk.LEFT, padx=8)
-        ttk.Button(controls_frame, text="结束", command=self._stop).pack(side=tk.LEFT)
+        ttk.Button(controls_frame, text="开始/继续F6", command=self._start).pack(side=tk.LEFT)
+        ttk.Button(controls_frame, text="暂停F9", command=self._pause).pack(side=tk.LEFT, padx=8)
+        ttk.Button(controls_frame, text="结束F10", command=self._stop).pack(side=tk.LEFT)
 
         log_frame = ttk.LabelFrame(outer, text="日志")
         log_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))

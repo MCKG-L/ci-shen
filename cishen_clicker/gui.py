@@ -20,9 +20,12 @@ try:
         MODULE_SWITCH_TEXT,
         NOTICE_TEXT,
         NOTICE_TITLE,
+        PROJECT_INFO_OR,
         PROJECT_INFO_TITLE,
         PROJECT_INFO_PREFIX,
         PROJECT_INFO_SUFFIX,
+        PROJECT_REPOSITORY_GITEE_LABEL,
+        PROJECT_REPOSITORY_GITEE_URL,
         PROJECT_REPOSITORY_LABEL,
         PROJECT_REPOSITORY_URL,
         USAGE_TEXT,
@@ -45,9 +48,12 @@ except ImportError:
         MODULE_SWITCH_TEXT,
         NOTICE_TEXT,
         NOTICE_TITLE,
+        PROJECT_INFO_OR,
         PROJECT_INFO_TITLE,
         PROJECT_INFO_PREFIX,
         PROJECT_INFO_SUFFIX,
+        PROJECT_REPOSITORY_GITEE_LABEL,
+        PROJECT_REPOSITORY_GITEE_URL,
         PROJECT_REPOSITORY_LABEL,
         PROJECT_REPOSITORY_URL,
         USAGE_TEXT,
@@ -159,6 +165,16 @@ class MiningGui:
         )
         link_label.pack(side=tk.LEFT)
         link_label.bind("<Button-1>", lambda _event: webbrowser.open(PROJECT_REPOSITORY_URL))
+        ttk.Label(project_intro, text=PROJECT_INFO_OR).pack(side=tk.LEFT)
+        link_label_gitee = ttk.Label(
+            project_intro,
+            text=PROJECT_REPOSITORY_GITEE_LABEL,
+            foreground="#0563c1",
+            cursor="hand2",
+            font=("Microsoft YaHei", 9, "underline"),
+        )
+        link_label_gitee.pack(side=tk.LEFT)
+        link_label_gitee.bind("<Button-1>", lambda _event: webbrowser.open(PROJECT_REPOSITORY_GITEE_URL))
         ttk.Label(
             project_frame,
             text=PROJECT_INFO_SUFFIX,

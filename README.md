@@ -10,7 +10,7 @@
 
 ## 下载使用
 
-如果只是使用程序，请在 GitHub Release 页面下载 `cishen assistant.zip`。
+如果只是使用程序，请点击右侧Releases（发行版）中下载 `cishen assistant.zip`。
 
 下载后解压，运行其中的 `cishen assistant.exe` 即可。请不要下载 `Source code (zip)` 或 `Source code (tar.gz)`，那是 GitHub 自动生成的源码包，不能直接运行。
 
@@ -108,5 +108,3 @@ python -m cishen_clicker --live
 .\pack.ps1
 ```
 打包脚本会使用 Python 3.7 和旧 Windows 兼容依赖生成 `cishen assistant.zip`。
-
-如果别人运行时看到缺少 `api-ms-win-core-path-l1-1-0.dll`，说明之前的包大概率是用 Python 3.11 等较新的环境打出来的，请重新运行 `.\pack.ps1` 生成压缩包。不要从网上单独下载 DLL 放进程序目录。

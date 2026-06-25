@@ -10,7 +10,7 @@
 
 ## 下载使用
 
-如果只是使用程序，请点击右侧 Releases（发行版）中下载 `cishen-assistant.zip`。
+如果只是使用程序，请在右侧 Releases（发行版）中下载 `cishen-assistant.zip`。
 
 下载后解压，运行其中的 `cishen-assistant.exe` 即可。请不要下载 `Source code (zip)` 或 `Source code (tar.gz)`，那是 GitHub 自动生成的源码包，不能直接运行。
 

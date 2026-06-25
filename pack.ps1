@@ -9,7 +9,7 @@ $PipOptions = @("--disable-pip-version-check", "--prefer-binary")
 # & $Python $PythonVersion -m pip install @PipOptions --upgrade -r requirements-pack-win7.txt
 # & $Python $PythonVersion -m pip install @PipOptions --upgrade "pyinstaller==5.13.2" "pyinstaller-hooks-contrib==2023.10"
 
-foreach ($Path in @("build", "dist", "CISHEN.zip", "CISHEN-Assistant.zip", "CiShen Assistant.zip", "cishen assistant.zip", "次神助手.zip")) {
+foreach ($Path in @("build", "dist", "CISHEN.zip", "CISHEN-Assistant.zip", "CiShen Assistant.zip", "cishen-assistant.zip", "次神助手.zip")) {
   if (Test-Path -LiteralPath $Path) {
     Remove-Item -LiteralPath $Path -Recurse -Force
   }
@@ -18,11 +18,6 @@ foreach ($Path in @("build", "dist", "CISHEN.zip", "CISHEN-Assistant.zip", "CiSh
 & $Python $PythonVersion -m PyInstaller `
   --noconfirm `
   --clean `
-  --onedir `
-  --windowed `
-  --name "cishen assistant" `
-  --add-data "config.json;." `
-  --add-data "NOTICE.txt;." `
-  cishen_clicker\gui.py
+  cishen-assistant.spec
 
-Compress-Archive -Path "dist\cishen assistant\*" -DestinationPath "cishen assistant.zip" -Force
+Compress-Archive -Path "dist\cishen-assistant\*" -DestinationPath "cishen-assistant.zip" -Force

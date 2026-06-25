@@ -1,18 +1,29 @@
 # 次神：光之觉醒PC端助手
 
-这是一个 Windows 桌面辅助工具。当前已完成“挖矿模块”，并预留“副本、召唤、菜园管理”的独立入口；GUI 和命令行都会根据 `config.json` 中的 `active_module` 运行当前选择的模块。
+这是一个 Windows 桌面辅助工具。当前已完成“挖矿模块”，并预留“副本、召唤、菜园管理”的独立入口。
 
 ## 版权声明
 
-开发所属工会：太虚殿。
+开发所属工会：太虚殿（905662）。
 
 本程序完全免费，仅供学习、研究与个人测试使用。禁止售卖，禁止以任何形式转售、收费分发或用于商业牟利。如果你通过付费方式获得本程序，请立即停止交易并要求退款。
 
 ## 下载使用
 
-如果只是使用程序，请点击右侧Releases（发行版）中下载 `cishen assistant.zip`。
+如果只是使用程序，请点击右侧 Releases（发行版）中下载 `cishen-assistant.zip`。
 
-下载后解压，运行其中的 `cishen assistant.exe` 即可。请不要下载 `Source code (zip)` 或 `Source code (tar.gz)`，那是 GitHub 自动生成的源码包，不能直接运行。
+下载后解压，运行其中的 `cishen-assistant.exe` 即可。请不要下载 `Source code (zip)` 或 `Source code (tar.gz)`，那是 GitHub 自动生成的源码包，不能直接运行。
+
+### Windows 安全提示说明
+
+由于本程序未购买商业代码签名证书，运行 `cishen-assistant.exe` 时 Windows 可能会弹出 **"Windows 已保护你的电脑"** 或显示 **"未知发布者"** 警告。这是 Windows SmartScreen 的正常行为，并非程序包含恶意代码。
+
+解决方法：
+
+1. 在弹出的警告窗口中点击 **"更多信息"**
+2. 然后点击 **"仍要运行"**
+
+> 本程序完全免费且开源，代码可于 [GitHub 仓库](https://github.com/MCKG-L/ci-shen) 审查。如仍有顾虑，可按下方"本地开发运行"方式从源码直接运行。
 
 ## 初次版本说明
 
@@ -23,9 +34,9 @@
 ## 本地开发运行
 
 ```powershell
-cd D:\Develop\project\CISHEN
-py -m venv .venv
-.\.venv\Scripts\activate
+cd your\path\to\CISHEN
+conda create -n cishen python=3.11 -y
+conda activate cishen
 python -m pip install -r requirements.txt
 ```
 
@@ -102,9 +113,9 @@ python -m cishen_clicker --live
 
 ## 打包说明
 
-如果要生成带 `cishen assistant.exe` 的压缩包，推荐直接运行：
+如果要生成带 `cishen-assistant.exe` 的压缩包，推荐直接运行：
 
 ```powershell
 .\pack.ps1
 ```
-打包脚本会使用 Python 3.7 和旧 Windows 兼容依赖生成 `cishen assistant.zip`。
+打包脚本会使用 Python 3.7 和旧 Windows 兼容依赖生成 `cishen-assistant.zip`。

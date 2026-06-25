@@ -63,6 +63,17 @@ except ImportError:
     from cishen_clicker.workspace_config import WorkspaceConfig, load_workspace_config, save_workspace_config
 
 
+def _resource_path(relative_path: str) -> Path:
+    """兼容开发模式与 PyInstaller 打包后的资源路径"""
+    import sys as _sys
+
+    if getattr(_sys, "frozen", False):
+        base = Path(_sys._MEIPASS)
+    else:
+        base = Path(__file__).resolve().parents[1]
+    return base / relative_path
+
+
 class MiningGui:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
@@ -71,6 +82,12 @@ class MiningGui:
         self.root.resizable(False, False)
         self.root.minsize(760, 700)
         self.root.maxsize(760, 700)
+
+        self._icon_img: tk.PhotoImage | None = None
+        icon_path = _resource_path("resources/avatar.png")
+        if icon_path.exists():
+            self._icon_img = tk.PhotoImage(file=str(icon_path))
+            self.root.iconphoto(True, self._icon_img)
 
         self.config_path_var = tk.StringVar(value="config.json")
         self.status_var = tk.StringVar(value="空闲")

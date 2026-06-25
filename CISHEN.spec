@@ -8,7 +8,7 @@ a = Analysis(
     ['cishen_clicker\\gui.py'],
     pathex=[],
     binaries=[],
-    datas=[('config.json', '.'), ('NOTICE.txt', '.')],
+    datas=[('config.json', '.'), ('NOTICE.txt', '.'), ('resources', 'resources')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

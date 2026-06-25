@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import traceback
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
@@ -15,7 +16,18 @@ try:
     from .control import ControlState
     from .gui_config import apply_gui_values, extract_gui_values
     from .modules import get_module_spec, list_module_keys
-    from .notice import MODULE_SWITCH_TEXT, NOTICE_TEXT, NOTICE_TITLE, USAGE_TEXT, USAGE_TITLE
+    from .notice import (
+        MODULE_SWITCH_TEXT,
+        NOTICE_TEXT,
+        NOTICE_TITLE,
+        PROJECT_INFO_TITLE,
+        PROJECT_INFO_PREFIX,
+        PROJECT_INFO_SUFFIX,
+        PROJECT_REPOSITORY_LABEL,
+        PROJECT_REPOSITORY_URL,
+        USAGE_TEXT,
+        USAGE_TITLE,
+    )
     from .windows import set_process_dpi_awareness
     from .workspace_config import WorkspaceConfig, load_workspace_config, save_workspace_config
 except ImportError:
@@ -29,7 +41,18 @@ except ImportError:
     from cishen_clicker.control import ControlState
     from cishen_clicker.gui_config import apply_gui_values, extract_gui_values
     from cishen_clicker.modules import get_module_spec, list_module_keys
-    from cishen_clicker.notice import MODULE_SWITCH_TEXT, NOTICE_TEXT, NOTICE_TITLE, USAGE_TEXT, USAGE_TITLE
+    from cishen_clicker.notice import (
+        MODULE_SWITCH_TEXT,
+        NOTICE_TEXT,
+        NOTICE_TITLE,
+        PROJECT_INFO_TITLE,
+        PROJECT_INFO_PREFIX,
+        PROJECT_INFO_SUFFIX,
+        PROJECT_REPOSITORY_LABEL,
+        PROJECT_REPOSITORY_URL,
+        USAGE_TEXT,
+        USAGE_TITLE,
+    )
     from cishen_clicker.windows import set_process_dpi_awareness
     from cishen_clicker.workspace_config import WorkspaceConfig, load_workspace_config, save_workspace_config
 
@@ -108,17 +131,40 @@ class MiningGui:
         info_frame = ttk.Frame(content)
         info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(12, 0))
 
+        usage_frame = ttk.LabelFrame(info_frame, text=USAGE_TITLE)
+        usage_frame.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(usage_frame, text=USAGE_TEXT, wraplength=500, justify=tk.LEFT).pack(
+            fill=tk.X, padx=10, pady=10
+        )
+
         notice_frame = ttk.LabelFrame(info_frame, text=NOTICE_TITLE)
-        notice_frame.pack(fill=tk.X)
+        notice_frame.pack(fill=tk.X, pady=(10, 0))
         ttk.Label(notice_frame, text=NOTICE_TEXT, wraplength=500, justify=tk.LEFT).pack(
             fill=tk.X, padx=10, pady=10
         )
 
-        usage_frame = ttk.LabelFrame(info_frame, text=USAGE_TITLE)
-        usage_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-        ttk.Label(usage_frame, text=USAGE_TEXT, wraplength=500, justify=tk.LEFT).pack(
-            fill=tk.X, padx=10, pady=10
+        project_frame = ttk.LabelFrame(info_frame, text=PROJECT_INFO_TITLE)
+        project_frame.pack(fill=tk.X, pady=(10, 0))
+        project_intro = ttk.Frame(project_frame)
+        project_intro.pack(fill=tk.X, padx=10, pady=(10, 0))
+        ttk.Label(project_intro, text=PROJECT_INFO_PREFIX, wraplength=500, justify=tk.LEFT).pack(
+            side=tk.LEFT
         )
+        link_label = ttk.Label(
+            project_intro,
+            text=PROJECT_REPOSITORY_LABEL,
+            foreground="#0563c1",
+            cursor="hand2",
+            font=("Microsoft YaHei", 9, "underline"),
+        )
+        link_label.pack(side=tk.LEFT)
+        link_label.bind("<Button-1>", lambda _event: webbrowser.open(PROJECT_REPOSITORY_URL))
+        ttk.Label(
+            project_frame,
+            text=PROJECT_INFO_SUFFIX,
+            wraplength=500,
+            justify=tk.LEFT,
+        ).pack(fill=tk.X, padx=10, pady=(4, 10))
 
     def _show_module_page(self, module_key: str) -> None:
         module_spec = get_module_spec(module_key)

@@ -8,6 +8,12 @@ from cishen_clicker.notice import (
     MODULE_SWITCH_TEXT,
     NOTICE_TEXT,
     NOTICE_TITLE,
+    PROJECT_INFO_PREFIX,
+    PROJECT_INFO_SUFFIX,
+    PROJECT_REPOSITORY_LABEL,
+    PROJECT_REPOSITORY_URL,
+    PROJECT_INFO_TEXT,
+    PROJECT_INFO_TITLE,
     USAGE_TEXT,
     USAGE_TITLE,
 )
@@ -56,13 +62,22 @@ class FakeCombobox:
 
 class FakeLabel:
     def __init__(self, *args, **kwargs):
+        self.parent = args[0] if args else None
         self.text = kwargs.get("text", "")
+        self.foreground = kwargs.get("foreground")
+        self.cursor = kwargs.get("cursor")
+        self.font = kwargs.get("font")
+        self.bind_calls = []
         created_labels.append(self)
 
     def pack(self, *args, **kwargs):
         return None
 
     def grid(self, *args, **kwargs):
+        return None
+
+    def bind(self, *args, **kwargs):
+        self.bind_calls.append((args, kwargs))
         return None
 
 
@@ -384,14 +399,50 @@ class MiningGuiWindowTests(unittest.TestCase):
         modules={"mining": {}, "dungeon": {}, "summon": {}, "garden": {}},
     ))
     @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
-    def test_home_page_shows_usage_box_below_notice(
+    def test_home_page_shows_usage_notice_and_project_info_in_requested_order(
         self,
         _load_workspace_config,
     ):
         MiningGui(FakeTk())
 
-        self.assertIn(USAGE_TITLE, [frame.text for frame in created_label_frames])
+        frame_titles = [frame.text for frame in created_label_frames]
+        self.assertLess(frame_titles.index(USAGE_TITLE), frame_titles.index(NOTICE_TITLE))
+        self.assertLess(frame_titles.index(NOTICE_TITLE), frame_titles.index(PROJECT_INFO_TITLE))
         self.assertIn(USAGE_TEXT, [label.text for label in created_labels])
+        self.assertIn(NOTICE_TEXT, [label.text for label in created_labels])
+        self.assertIn(PROJECT_INFO_PREFIX, [label.text for label in created_labels])
+        self.assertIn(PROJECT_REPOSITORY_LABEL, [label.text for label in created_labels])
+        self.assertIn(PROJECT_INFO_SUFFIX, [label.text for label in created_labels])
+
+    @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
+    @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)
+    @mock.patch("cishen_clicker.gui.ttk.Label", FakeLabel)
+    @mock.patch("cishen_clicker.gui.ttk.Entry", FakeEntry)
+    @mock.patch("cishen_clicker.gui.ttk.Button", FakeButton)
+    @mock.patch("cishen_clicker.gui.ttk.Combobox", FakeCombobox)
+    @mock.patch("cishen_clicker.gui.ScrolledText", FakeScrolledText)
+    @mock.patch("cishen_clicker.gui.tk.StringVar", FakeStringVar)
+    @mock.patch("cishen_clicker.gui.load_workspace_config", return_value=WorkspaceConfig(
+        active_module="mining",
+        modules={"mining": {}, "dungeon": {}, "summon": {}, "garden": {}},
+    ))
+    @mock.patch("cishen_clicker.gui.ttk.Checkbutton", FakeCheckbutton)
+    def test_project_repository_is_clickable_link(
+        self,
+        _load_workspace_config,
+    ):
+        gui = MiningGui(FakeTk())
+
+        link_label = next(label for label in created_labels if label.text == PROJECT_REPOSITORY_LABEL)
+        self.assertEqual(link_label.foreground, "#0563c1")
+        self.assertEqual(link_label.cursor, "hand2")
+        self.assertTrue(link_label.bind_calls)
+
+        with mock.patch("cishen_clicker.gui.webbrowser.open") as open_browser:
+            callback = link_label.bind_calls[0][0][1]
+            callback(None)
+
+        open_browser.assert_called_once_with(PROJECT_REPOSITORY_URL)
 
     @mock.patch("cishen_clicker.gui.ttk.Frame", FakeFrame)
     @mock.patch("cishen_clicker.gui.ttk.LabelFrame", FakeLabelFrame)

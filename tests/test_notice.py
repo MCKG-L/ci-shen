@@ -1,7 +1,7 @@
 from pathlib import Path
 import unittest
 
-from cishen_clicker.notice import NOTICE_TEXT
+from cishen_clicker.notice import PROJECT_INFO_TEXT, PROJECT_INFO_TITLE, NOTICE_TEXT
 
 
 REQUIRED_PHRASES = ("开发所属工会", "太虚殿", "完全免费", "仅供学习", "禁止售卖")
@@ -32,6 +32,12 @@ class NoticeTests(unittest.TestCase):
         pack_script = (PROJECT_ROOT / "pack.ps1").read_text(encoding="utf-8")
 
         self.assertIn("NOTICE.txt;.", pack_script)
+
+    def test_project_info_points_to_repository(self):
+        self.assertEqual(PROJECT_INFO_TITLE, "项目信息")
+        self.assertIn("开源项目", PROJECT_INFO_TEXT)
+        self.assertIn("MCKG-L/ci-shen", PROJECT_INFO_TEXT)
+        self.assertIn("https://github.com/MCKG-L/ci-shen", PROJECT_INFO_TEXT)
 
 
 if __name__ == "__main__":

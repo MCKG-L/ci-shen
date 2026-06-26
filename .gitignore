@@ -16,8 +16,10 @@ ENV/
 # Build and packaging output
 build/
 dist/
+dist-installer/
 docs/
 *.zip
+*.exe
 *.egg-info/
 .eggs/
 

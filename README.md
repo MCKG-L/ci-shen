@@ -10,13 +10,20 @@
 
 ## 下载使用
 
-如果只是使用程序，请在右侧 Releases（发行版）中下载 `cishen-assistant.zip`。
+如果只是使用程序，请在右侧 Releases（发行版）中下载 setup 安装器，例如 `cishen-assistant-setup-1.0.0.exe`，或最新版本的 `cishen-assistant-setup-*.exe`。
 
-下载后解压，运行其中的 `cishen-assistant.exe` 即可。请不要下载 `Source code (zip)` 或 `Source code (tar.gz)`，那是 GitHub 自动生成的源码包，不能直接运行。
+安装步骤：
+
+1. 下载 `cishen-assistant-setup-*.exe`。
+2. 双击运行安装器，按提示完成安装。安装过程中会显示“选择安装位置”页面，可以保留默认路径，也可以点击“浏览”更改安装目录。
+3. 安装完成后，从开始菜单启动“次神助手”。
+4. 如果安装时勾选了桌面快捷方式，也可以从桌面启动。
+
+请不要下载 `Source code (zip)` 或 `Source code (tar.gz)`，那是 GitHub 自动生成的源码包，不能直接运行。
 
 ### Windows 安全提示说明
 
-由于本程序未购买商业代码签名证书，运行 `cishen-assistant.exe` 时 Windows 可能会弹出 **"Windows 已保护你的电脑"** 或显示 **"未知发布者"** 警告。这是 Windows SmartScreen 的正常行为，并非程序包含恶意代码。
+由于本程序未购买商业代码签名证书，运行安装器或 `cishen-assistant.exe` 时 Windows 可能会弹出 **"Windows 已保护你的电脑"** 或显示 **"未知发布者"** 警告。这是 Windows SmartScreen 的正常行为，并非程序包含恶意代码。
 
 解决方法：
 
@@ -113,9 +120,18 @@ python -m cishen_clicker --live
 
 ## 打包说明
 
-如果要生成带 `cishen-assistant.exe` 的压缩包，推荐直接运行：
+如果要生成旧版 zip 压缩包，运行：
 
 ```powershell
 .\pack.ps1
 ```
-打包脚本会使用 Python 3.7 和旧 Windows 兼容依赖生成 `cishen-assistant.zip`。
+
+如果要生成 Windows setup 安装器，请先安装 Inno Setup 6。脚本会自动查找默认安装目录、PATH 和注册表中的自定义安装位置。然后运行：
+
+```powershell
+.\pack-setup.ps1
+```
+
+两个打包脚本都会使用 Python 3.7 和旧 Windows 兼容依赖。`pack.ps1` 会生成 `cishen-assistant.zip`，`pack-setup.ps1` 会先通过 PyInstaller 生成 `dist\cishen-assistant`，再调用 Inno Setup 生成 `dist-installer\cishen-assistant-setup-1.0.0.exe`。
+
+如果别人运行安装后的程序时看到缺少 `api-ms-win-core-path-l1-1-0.dll`，说明之前的包大概率是用 Python 3.11 等较新的环境打出来的。请重新按上面的 `.\pack-setup.ps1` 生成安装器，不要从网上单独下载 DLL 放进程序目录。

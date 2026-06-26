@@ -28,10 +28,10 @@ class NoticeTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, notice)
 
-    def test_pack_script_includes_notice_file(self):
-        pack_script = (PROJECT_ROOT / "pack.ps1").read_text(encoding="utf-8")
+    def test_pyinstaller_spec_includes_notice_file(self):
+        spec = (PROJECT_ROOT / "cishen-assistant.spec").read_text(encoding="utf-8")
 
-        self.assertIn("NOTICE.txt;.", pack_script)
+        self.assertIn("('NOTICE.txt', '.')", spec)
 
     def test_project_info_points_to_repository(self):
         self.assertEqual(PROJECT_INFO_TITLE, "项目信息")

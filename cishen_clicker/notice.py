@@ -22,7 +22,7 @@ PROJECT_REPOSITORY_LABEL = "MCKG-L/ci-shen"
 PROJECT_REPOSITORY_URL = "https://github.com/MCKG-L/ci-shen"
 PROJECT_REPOSITORY_GITEE_LABEL = "MCKG-L/cishen-assistant"
 PROJECT_REPOSITORY_GITEE_URL = "https://gitee.com/MCKG-L/cishen-assistant"
-PROJECT_INFO_PREFIX = "项目仓库地址："
+PROJECT_INFO_PREFIX = "本项目为开源项目，项目仓库地址："
 PROJECT_INFO_OR = " 或 "
 PROJECT_INFO_SUFFIX = "若要获取最新项目，体验完整最新功能，问题反馈等请访问项目仓库。如有定制功能需求联系QQ：2902648936"
 

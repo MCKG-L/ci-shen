@@ -86,8 +86,11 @@ class MiningGui:
         self._icon_img: tk.PhotoImage | None = None
         icon_path = _resource_path("resources/avatar.png")
         if icon_path.exists():
-            self._icon_img = tk.PhotoImage(file=str(icon_path))
-            self.root.iconphoto(True, self._icon_img)
+            try:
+                self._icon_img = tk.PhotoImage(file=str(icon_path))
+                self.root.iconphoto(True, self._icon_img)
+            except (RuntimeError, tk.TclError):
+                self._icon_img = None
 
         self.config_path_var = tk.StringVar(value="config.json")
         self.status_var = tk.StringVar(value="空闲")
